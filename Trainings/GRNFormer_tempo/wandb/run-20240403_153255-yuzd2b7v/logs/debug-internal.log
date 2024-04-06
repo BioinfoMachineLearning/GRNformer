@@ -1,0 +1,217 @@
+2024-04-03 15:32:55,746 INFO    StreamThr :1156126 [internal.py:wandb_internal():86] W&B internal server running at pid: 1156126, started at: 2024-04-03 15:32:55.745934
+2024-04-03 15:32:55,747 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status
+2024-04-03 15:32:55,759 INFO    WriterThread:1156126 [datastore.py:open_for_write():85] open: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/run-yuzd2b7v.wandb
+2024-04-03 15:32:55,759 DEBUG   SenderThread:1156126 [sender.py:send():379] send: header
+2024-04-03 15:32:55,760 DEBUG   SenderThread:1156126 [sender.py:send():379] send: run
+2024-04-03 15:32:55,761 INFO    SenderThread:1156126 [sender.py:_maybe_setup_resume():758] checking resume status for aghktb/GRNFormerLinkPred/yuzd2b7v
+2024-04-03 15:32:56,121 INFO    SenderThread:1156126 [dir_watcher.py:__init__():211] watching files in: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files
+2024-04-03 15:32:56,121 INFO    SenderThread:1156126 [sender.py:_start_run_threads():1122] run started: yuzd2b7v with start time 1712176375.746807
+2024-04-03 15:32:56,122 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: summary_record
+2024-04-03 15:32:56,122 INFO    SenderThread:1156126 [sender.py:_save_file():1376] saving file wandb-summary.json with policy end
+2024-04-03 15:32:56,122 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: check_version
+2024-04-03 15:32:56,123 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: check_version
+2024-04-03 15:32:56,329 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: run_start
+2024-04-03 15:32:56,350 DEBUG   HandlerThread:1156126 [system_info.py:__init__():31] System info init
+2024-04-03 15:32:56,350 DEBUG   HandlerThread:1156126 [system_info.py:__init__():46] System info init done
+2024-04-03 15:32:56,350 INFO    HandlerThread:1156126 [system_monitor.py:start():181] Starting system monitor
+2024-04-03 15:32:56,350 INFO    SystemMonitor:1156126 [system_monitor.py:_start():145] Starting system asset monitoring threads
+2024-04-03 15:32:56,351 INFO    HandlerThread:1156126 [system_monitor.py:probe():201] Collecting system info
+2024-04-03 15:32:56,351 INFO    SystemMonitor:1156126 [interfaces.py:start():190] Started cpu monitoring
+2024-04-03 15:32:56,351 INFO    SystemMonitor:1156126 [interfaces.py:start():190] Started disk monitoring
+2024-04-03 15:32:56,352 INFO    SystemMonitor:1156126 [interfaces.py:start():190] Started gpu monitoring
+2024-04-03 15:32:56,352 INFO    SystemMonitor:1156126 [interfaces.py:start():190] Started memory monitoring
+2024-04-03 15:32:56,354 INFO    SystemMonitor:1156126 [interfaces.py:start():190] Started network monitoring
+2024-04-03 15:32:56,396 DEBUG   HandlerThread:1156126 [system_info.py:probe():195] Probing system
+2024-04-03 15:32:56,397 DEBUG   HandlerThread:1156126 [gitlib.py:_init_repo():53] git repository is invalid
+2024-04-03 15:32:56,397 DEBUG   HandlerThread:1156126 [system_info.py:probe():240] Probing system done
+2024-04-03 15:32:56,397 DEBUG   HandlerThread:1156126 [system_monitor.py:probe():210] {'os': 'Linux-4.18.0-513.18.1.el8_9.x86_64-x86_64-with-glibc2.28', 'python': '3.11.4', 'heartbeatAt': '2024-04-03T20:32:56.396258', 'startedAt': '2024-04-03T20:32:55.737236', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': '/home/aghktb/GRN/GRNformer/GRNFlow_Train.py', 'codePath': 'GRN/GRNformer/GRNFlow_Train.py', 'host': 'multicom.eecs.missouri.edu', 'username': 'aghktb', 'executable': '/home/aghktb/miniconda3/envs/myenv/bin/python', 'cpu_count': 40, 'cpu_count_logical': 80, 'cpu_freq': {'current': 3.6855499999999948, 'min': 3700.0, 'max': 3700.0}, 'cpu_freq_per_core': [{'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.184, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.7, 'min': 3700.0, 'max': 3700.0}, {'current': 3.278, 'min': 3700.0, 'max': 3700.0}], 'disk': {'total': 217.81156539916992, 'used': 28.633148193359375}, 'gpu': 'Tesla V100-PCIE-32GB', 'gpu_count': 3, 'gpu_devices': [{'name': 'Tesla V100-PCIE-32GB', 'memory_total': 34359738368}, {'name': 'Tesla V100-PCIE-32GB', 'memory_total': 34359738368}, {'name': 'Tesla V100-PCIE-32GB', 'memory_total': 34359738368}], 'memory': {'total': 503.2446746826172}}
+2024-04-03 15:32:56,397 INFO    HandlerThread:1156126 [system_monitor.py:probe():211] Finished collecting system info
+2024-04-03 15:32:56,398 INFO    HandlerThread:1156126 [system_monitor.py:probe():214] Publishing system info
+2024-04-03 15:32:56,398 DEBUG   HandlerThread:1156126 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2024-04-03 15:32:56,398 DEBUG   HandlerThread:1156126 [system_info.py:_save_pip():67] Saving pip packages done
+2024-04-03 15:32:56,398 DEBUG   HandlerThread:1156126 [system_info.py:_save_conda():74] Saving list of conda packages installed into the current environment
+2024-04-03 15:32:57,124 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_created():272] file/dir created: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/requirements.txt
+2024-04-03 15:32:57,125 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_created():272] file/dir created: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/conda-environment.yaml
+2024-04-03 15:32:57,125 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_created():272] file/dir created: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/wandb-summary.json
+2024-04-03 15:33:06,124 DEBUG   HandlerThread:1156126 [system_info.py:_save_conda():86] Saving conda packages done
+2024-04-03 15:33:06,125 INFO    HandlerThread:1156126 [system_monitor.py:probe():216] Finished publishing system info
+2024-04-03 15:33:06,126 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_modified():289] file/dir modified: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/conda-environment.yaml
+2024-04-03 15:33:06,127 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_created():272] file/dir created: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/wandb-metadata.json
+2024-04-03 15:33:06,129 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:06,129 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: keepalive
+2024-04-03 15:33:06,130 DEBUG   SenderThread:1156126 [sender.py:send():379] send: files
+2024-04-03 15:33:06,130 INFO    SenderThread:1156126 [sender.py:_save_file():1376] saving file wandb-metadata.json with policy now
+2024-04-03 15:33:06,133 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: stop_status
+2024-04-03 15:33:06,134 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: stop_status
+2024-04-03 15:33:06,310 DEBUG   SenderThread:1156126 [sender.py:send():379] send: telemetry
+2024-04-03 15:33:06,310 DEBUG   SenderThread:1156126 [sender.py:send():379] send: metric
+2024-04-03 15:33:06,310 DEBUG   SenderThread:1156126 [sender.py:send():379] send: telemetry
+2024-04-03 15:33:06,311 DEBUG   SenderThread:1156126 [sender.py:send():379] send: metric
+2024-04-03 15:33:06,311 WARNING SenderThread:1156126 [sender.py:send_metric():1327] Seen metric with glob (shouldn't happen)
+2024-04-03 15:33:06,535 INFO    wandb-upload_0:1156126 [upload_job.py:push():131] Uploaded file /tmp/tmpy762nu2dwandb/70363idk-wandb-metadata.json
+2024-04-03 15:33:07,311 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:12,312 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:17,313 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:21,133 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: stop_status
+2024-04-03 15:33:21,134 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: stop_status
+2024-04-03 15:33:23,262 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:28,265 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:36,134 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: stop_status
+2024-04-03 15:33:39,774 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: stop_status
+2024-04-03 15:33:40,137 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_modified():289] file/dir modified: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/config.yaml
+2024-04-03 15:33:43,245 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: attach
+2024-04-03 15:33:43,249 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: summary_record
+2024-04-03 15:33:43,250 INFO    SenderThread:1156126 [sender.py:_save_file():1376] saving file wandb-summary.json with policy end
+2024-04-03 15:33:43,289 DEBUG   SenderThread:1156126 [sender.py:send():379] send: telemetry
+2024-04-03 15:33:43,289 DEBUG   SenderThread:1156126 [sender.py:send():379] send: config
+2024-04-03 15:33:44,138 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_modified():289] file/dir modified: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/wandb-summary.json
+2024-04-03 15:33:45,290 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:50,291 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:51,134 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: stop_status
+2024-04-03 15:33:51,134 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: stop_status
+2024-04-03 15:33:56,281 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:33:56,363 DEBUG   SystemMonitor:1156126 [system_monitor.py:_start():159] Starting system metrics aggregation loop
+2024-04-03 15:33:56,365 DEBUG   SenderThread:1156126 [sender.py:send():379] send: stats
+2024-04-03 15:34:01,388 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:34:02,155 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_modified():289] file/dir modified: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/config.yaml
+2024-04-03 15:34:06,135 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: stop_status
+2024-04-03 15:34:06,135 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: stop_status
+2024-04-03 15:34:07,253 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:34:11,170 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_created():272] file/dir created: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/output.log
+2024-04-03 15:34:11,199 DEBUG   SenderThread:1156126 [sender.py:send():379] send: exit
+2024-04-03 15:34:11,200 INFO    SenderThread:1156126 [sender.py:send_exit():584] handling exit code: 1
+2024-04-03 15:34:11,200 INFO    SenderThread:1156126 [sender.py:send_exit():586] handling runtime: 74
+2024-04-03 15:34:11,202 INFO    SenderThread:1156126 [sender.py:_save_file():1376] saving file wandb-summary.json with policy end
+2024-04-03 15:34:11,202 INFO    SenderThread:1156126 [sender.py:send_exit():592] send defer
+2024-04-03 15:34:11,202 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,202 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 0
+2024-04-03 15:34:11,203 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,203 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 0
+2024-04-03 15:34:11,203 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 1
+2024-04-03 15:34:11,203 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,203 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 1
+2024-04-03 15:34:11,203 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,203 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 1
+2024-04-03 15:34:11,203 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 2
+2024-04-03 15:34:11,203 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,203 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 2
+2024-04-03 15:34:11,203 INFO    HandlerThread:1156126 [system_monitor.py:finish():190] Stopping system monitor
+2024-04-03 15:34:11,203 DEBUG   SystemMonitor:1156126 [system_monitor.py:_start():166] Finished system metrics aggregation loop
+2024-04-03 15:34:11,204 DEBUG   SystemMonitor:1156126 [system_monitor.py:_start():170] Publishing last batch of metrics
+2024-04-03 15:34:11,204 INFO    HandlerThread:1156126 [interfaces.py:finish():202] Joined cpu monitor
+2024-04-03 15:34:11,205 INFO    HandlerThread:1156126 [interfaces.py:finish():202] Joined disk monitor
+2024-04-03 15:34:11,562 INFO    HandlerThread:1156126 [interfaces.py:finish():202] Joined gpu monitor
+2024-04-03 15:34:11,562 INFO    HandlerThread:1156126 [interfaces.py:finish():202] Joined memory monitor
+2024-04-03 15:34:11,562 INFO    HandlerThread:1156126 [interfaces.py:finish():202] Joined network monitor
+2024-04-03 15:34:11,563 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,563 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 2
+2024-04-03 15:34:11,563 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 3
+2024-04-03 15:34:11,563 DEBUG   SenderThread:1156126 [sender.py:send():379] send: stats
+2024-04-03 15:34:11,564 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,564 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 3
+2024-04-03 15:34:11,564 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,564 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 3
+2024-04-03 15:34:11,564 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 4
+2024-04-03 15:34:11,564 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,564 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 4
+2024-04-03 15:34:11,564 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,564 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 4
+2024-04-03 15:34:11,564 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 5
+2024-04-03 15:34:11,565 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,565 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 5
+2024-04-03 15:34:11,565 DEBUG   SenderThread:1156126 [sender.py:send():379] send: summary
+2024-04-03 15:34:11,565 INFO    SenderThread:1156126 [sender.py:_save_file():1376] saving file wandb-summary.json with policy end
+2024-04-03 15:34:11,565 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,565 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 5
+2024-04-03 15:34:11,565 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 6
+2024-04-03 15:34:11,565 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,565 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 6
+2024-04-03 15:34:11,565 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,565 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 6
+2024-04-03 15:34:11,566 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 7
+2024-04-03 15:34:11,566 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: status_report
+2024-04-03 15:34:11,566 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:11,566 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 7
+2024-04-03 15:34:11,566 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:11,566 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 7
+2024-04-03 15:34:12,171 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_modified():289] file/dir modified: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/wandb-summary.json
+2024-04-03 15:34:12,200 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: poll_exit
+2024-04-03 15:34:13,167 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 8
+2024-04-03 15:34:13,167 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: poll_exit
+2024-04-03 15:34:13,167 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:13,167 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 8
+2024-04-03 15:34:13,168 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:13,168 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 8
+2024-04-03 15:34:13,168 INFO    SenderThread:1156126 [job_builder.py:build():280] Attempting to build job artifact
+2024-04-03 15:34:13,168 INFO    SenderThread:1156126 [job_builder.py:_get_source_type():400] no source found
+2024-04-03 15:34:13,168 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 9
+2024-04-03 15:34:13,168 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:13,168 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 9
+2024-04-03 15:34:13,168 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:13,168 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 9
+2024-04-03 15:34:13,168 INFO    SenderThread:1156126 [dir_watcher.py:finish():359] shutting down directory watcher
+2024-04-03 15:34:13,171 INFO    Thread-12 :1156126 [dir_watcher.py:_on_file_modified():289] file/dir modified: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/output.log
+2024-04-03 15:34:13,171 INFO    SenderThread:1156126 [dir_watcher.py:finish():389] scan: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files
+2024-04-03 15:34:13,171 INFO    SenderThread:1156126 [dir_watcher.py:finish():403] scan save: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/config.yaml config.yaml
+2024-04-03 15:34:13,171 INFO    SenderThread:1156126 [dir_watcher.py:finish():403] scan save: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/wandb-summary.json wandb-summary.json
+2024-04-03 15:34:13,172 INFO    SenderThread:1156126 [dir_watcher.py:finish():403] scan save: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/requirements.txt requirements.txt
+2024-04-03 15:34:13,173 INFO    SenderThread:1156126 [dir_watcher.py:finish():403] scan save: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/conda-environment.yaml conda-environment.yaml
+2024-04-03 15:34:13,175 INFO    SenderThread:1156126 [dir_watcher.py:finish():403] scan save: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/wandb-metadata.json wandb-metadata.json
+2024-04-03 15:34:13,175 INFO    SenderThread:1156126 [dir_watcher.py:finish():403] scan save: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/output.log output.log
+2024-04-03 15:34:13,177 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 10
+2024-04-03 15:34:13,178 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:13,178 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 10
+2024-04-03 15:34:13,180 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:13,180 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 10
+2024-04-03 15:34:13,180 INFO    SenderThread:1156126 [file_pusher.py:finish():159] shutting down file pusher
+2024-04-03 15:34:13,200 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: poll_exit
+2024-04-03 15:34:13,201 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: poll_exit
+2024-04-03 15:34:13,448 INFO    wandb-upload_1:1156126 [upload_job.py:push():131] Uploaded file /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/wandb-summary.json
+2024-04-03 15:34:13,622 INFO    wandb-upload_0:1156126 [upload_job.py:push():131] Uploaded file /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/config.yaml
+2024-04-03 15:34:13,656 INFO    wandb-upload_3:1156126 [upload_job.py:push():131] Uploaded file /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/conda-environment.yaml
+2024-04-03 15:34:13,978 INFO    wandb-upload_4:1156126 [upload_job.py:push():131] Uploaded file /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/output.log
+2024-04-03 15:34:13,989 INFO    wandb-upload_2:1156126 [upload_job.py:push():131] Uploaded file /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/files/requirements.txt
+2024-04-03 15:34:14,189 INFO    Thread-11 (_thread_body):1156126 [sender.py:transition_state():612] send defer: 11
+2024-04-03 15:34:14,189 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:14,189 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 11
+2024-04-03 15:34:14,190 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:14,190 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 11
+2024-04-03 15:34:14,190 INFO    SenderThread:1156126 [file_pusher.py:join():164] waiting for file pusher
+2024-04-03 15:34:14,190 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 12
+2024-04-03 15:34:14,190 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:14,190 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 12
+2024-04-03 15:34:14,190 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:14,190 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 12
+2024-04-03 15:34:14,201 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: poll_exit
+2024-04-03 15:34:14,342 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 13
+2024-04-03 15:34:14,343 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: poll_exit
+2024-04-03 15:34:14,343 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:14,343 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 13
+2024-04-03 15:34:14,343 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:14,343 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 13
+2024-04-03 15:34:14,343 INFO    SenderThread:1156126 [sender.py:transition_state():612] send defer: 14
+2024-04-03 15:34:14,343 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: defer
+2024-04-03 15:34:14,343 INFO    HandlerThread:1156126 [handler.py:handle_request_defer():170] handle defer: 14
+2024-04-03 15:34:14,343 DEBUG   SenderThread:1156126 [sender.py:send():379] send: final
+2024-04-03 15:34:14,344 DEBUG   SenderThread:1156126 [sender.py:send():379] send: footer
+2024-04-03 15:34:14,344 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: defer
+2024-04-03 15:34:14,344 INFO    SenderThread:1156126 [sender.py:send_request_defer():608] handle sender defer: 14
+2024-04-03 15:34:14,344 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: poll_exit
+2024-04-03 15:34:14,344 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: poll_exit
+2024-04-03 15:34:14,344 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: poll_exit
+2024-04-03 15:34:14,344 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: poll_exit
+2024-04-03 15:34:14,345 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: server_info
+2024-04-03 15:34:14,345 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: server_info
+2024-04-03 15:34:14,346 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: get_summary
+2024-04-03 15:34:14,346 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: sampled_history
+2024-04-03 15:34:14,347 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: job_info
+2024-04-03 15:34:14,424 DEBUG   SenderThread:1156126 [sender.py:send_request():406] send_request: job_info
+2024-04-03 15:34:14,424 INFO    MainThread:1156126 [wandb_run.py:_footer_history_summary_info():3475] rendering history
+2024-04-03 15:34:14,424 INFO    MainThread:1156126 [wandb_run.py:_footer_history_summary_info():3507] rendering summary
+2024-04-03 15:34:14,424 INFO    MainThread:1156126 [wandb_run.py:_footer_sync_info():3434] logging synced files
+2024-04-03 15:34:14,424 DEBUG   HandlerThread:1156126 [handler.py:handle_request():144] handle_request: shutdown
+2024-04-03 15:34:14,425 INFO    HandlerThread:1156126 [handler.py:finish():857] shutting down handler
+2024-04-03 15:34:15,347 INFO    WriterThread:1156126 [datastore.py:close():294] close: /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_tempo/wandb/run-20240403_153255-yuzd2b7v/run-yuzd2b7v.wandb
+2024-04-03 15:34:15,424 INFO    SenderThread:1156126 [sender.py:finish():1552] shutting down sender
+2024-04-03 15:34:15,424 INFO    SenderThread:1156126 [file_pusher.py:finish():159] shutting down file pusher
+2024-04-03 15:34:15,424 INFO    SenderThread:1156126 [file_pusher.py:join():164] waiting for file pusher

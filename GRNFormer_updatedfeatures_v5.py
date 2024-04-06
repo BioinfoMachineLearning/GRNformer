@@ -32,7 +32,7 @@ from torchmetrics.classification import AUROC,PrecisionRecallCurve,BinaryConfusi
 
 import Dataset_activatinglabels_biobert as dt
 import Dataset_activatinglabels_biobert_test as dt_test
-from GRNFormerModels import EdgeTransformerEncoder_new,EdgeTransformerEncoder_GATv2
+from GRNFormerModels import EdgeTransformerEncoder_new,EdgeTransformerEncoder_tcn,EdgeTransformerEncoder_GATv2
 from argparse import ArgumentParser
 from torch_geometric.loader import NeighborLoader
 
@@ -47,7 +47,7 @@ EDGE_DIM = 1
 NUM_HEADS = 8
 ENCODE_LAYERS = 6
 OUT_CH=64
-DATASET_DIR = "/home/aghktb/GRN/GCEN"
+DATASET_DIR = "/home/aghktb/GRN/GRNformer"
 
 
 
@@ -76,7 +76,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         
         self.save_hyperparameters()
         #self.model = VGAE(VariationalGCNEncoder(node_dim, out_chan))
-        self.model = VGAE(EdgeTransformerEncoder_new(node_dim, out_chan,num_head=num_heads,edge_dim=edge_dim,num_layers=encoder_layers))
+        self.model = VGAE(EdgeTransformerEncoder_tcn(node_dim, out_chan,num_head=num_heads,edge_dim=edge_dim,num_layers=encoder_layers))
         self.loss_fn = self.model.recon_loss
         self.kl =self.model.kl_loss
         self.metrics = MetricCollection([AUROC(task='binary'),PrecisionRecallCurve(task='binary')])
@@ -215,16 +215,16 @@ def train_GRNFormerLinkPred():
   
     print(len(dataset))
     train_size = int(0.8 * len(dataset))
-    #val_size = int(0.2 * len(dataset))
-    val_size = len(dataset) - (train_size)
-    dataset_train,dataset_valid= torch.utils.data.random_split(dataset, [train_size, val_size])
-    dataset_test = dt_test.GCENgraph(DATASET_DIR)
+    val_size = int(0.2 * len(dataset))
+    test_size = len(dataset) - (train_size+val_size)
+    dataset_train,dataset_valid,dataset_test= torch.utils.data.random_split(dataset, [train_size, val_size,test_size])
+    #dataset_test = dt_test.GCENgraph(DATASET_DIR)
     #dataset_valid = MicrographDataValid(DATASET_DIR)
     #dataset_test = MicrographDataValid(DATASET_DIR) # using validation data for testing here
     train_loader = DataLoader(dataset=dataset_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=args.num_dataloader_workers,persistent_workers=True)
     #train_loader = NeighborLoader(data=dataset_train[0], batch_size=BATCH_SIZE, shuffle=True, num_neighbors=30)
     print(train_size)
-    exit()
+    
     valid_loader = DataLoader(dataset=dataset_valid, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers,persistent_workers=True)
     test_loader = DataLoader(dataset=dataset_test, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers,persistent_workers=True)
     #torch.save(test_loader,DATASET_DIR+'/test.pt')

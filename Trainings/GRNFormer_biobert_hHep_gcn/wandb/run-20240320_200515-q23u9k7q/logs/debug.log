@@ -1,0 +1,28 @@
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_setup.py:_flush():76] Current SDK version is 0.15.7
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_setup.py:_flush():76] Configure stats pid to 1997859
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_setup.py:_flush():76] Loading settings from /home/aghktb/.config/wandb/settings
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_setup.py:_flush():76] Loading settings from /home/aghktb/wandb/settings
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'GRN/GRNformer/GRNFormer_updatedfeatures_v5.py', 'program': '/home/aghktb/GRN/GRNformer/GRNFormer_updatedfeatures_v5.py'}
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_init.py:_log_setup():507] Logging user logs to /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_biobert_hHep_gcn/wandb/run-20240320_200515-q23u9k7q/logs/debug.log
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_init.py:_log_setup():508] Logging internal logs to /home/aghktb/GRN/GRNformer/Trainings/GRNFormer_biobert_hHep_gcn/wandb/run-20240320_200515-q23u9k7q/logs/debug-internal.log
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_init.py:init():547] calling init triggers
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_init.py:init():554] wandb.init called with sweep_config: {}
+config: {}
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_init.py:init():596] starting backend
+2024-03-20 20:05:15,406 INFO    MainThread:1997859 [wandb_init.py:init():600] setting up manager
+2024-03-20 20:05:15,409 INFO    MainThread:1997859 [backend.py:_multiprocessing_setup():106] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2024-03-20 20:05:15,410 INFO    MainThread:1997859 [wandb_init.py:init():606] backend started and connected
+2024-03-20 20:05:15,419 INFO    MainThread:1997859 [wandb_init.py:init():697] updated telemetry
+2024-03-20 20:05:15,420 INFO    MainThread:1997859 [wandb_init.py:init():730] communicating run to backend with 60.0 second timeout
+2024-03-20 20:05:15,800 INFO    MainThread:1997859 [wandb_run.py:_on_init():2174] communicating current version
+2024-03-20 20:05:15,921 INFO    MainThread:1997859 [wandb_run.py:_on_init():2183] got version response upgrade_message: "wandb version 0.16.4 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-03-20 20:05:15,921 INFO    MainThread:1997859 [wandb_init.py:init():781] starting run threads in backend
+2024-03-20 20:05:24,531 INFO    MainThread:1997859 [wandb_run.py:_console_start():2153] atexit reg
+2024-03-20 20:05:24,531 INFO    MainThread:1997859 [wandb_run.py:_redirect():2008] redirect: wrap_raw
+2024-03-20 20:05:24,531 INFO    MainThread:1997859 [wandb_run.py:_redirect():2073] Wrapping output streams.
+2024-03-20 20:05:24,531 INFO    MainThread:1997859 [wandb_run.py:_redirect():2098] Redirects installed.
+2024-03-20 20:05:24,532 INFO    MainThread:1997859 [wandb_init.py:init():822] run started, returning control to user process
+2024-03-21 12:47:12,242 WARNING MsgRouterThr:1997859 [router.py:message_loop():77] message_loop has been closed

@@ -1,0 +1,104 @@
+Traceback (most recent call last):
+  File "/home/aghktb/GRN/GRNformer/GRNFormer_updatedfeatures_v5.py", line 247, in <module>
+    train_GRNFormerLinkPred()
+  File "/home/aghktb/GRN/GRNformer/GRNFormer_updatedfeatures_v5.py", line 240, in train_GRNFormerLinkPred
+    trainer.fit(model, train_loader, valid_loader)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 603, in fit
+    call._call_and_handle_interrupt(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/call.py", line 36, in _call_and_handle_interrupt
+    return trainer.strategy.launcher.launch(trainer_fn, *args, trainer=trainer, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 113, in launch
+    mp.start_processes(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 197, in start_processes
+    while not context.join():
+              ^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 160, in join
+    raise ProcessRaisedException(msg, error_index, failed_process.pid)
+torch.multiprocessing.spawn.ProcessRaisedException:
+-- Process 0 terminated with the following error:
+Traceback (most recent call last):
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 69, in _wrap
+    fn(i, *args)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 139, in _wrapping_function
+    results = function(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 645, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1098, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1177, in _run_stage
+    self._run_train()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1190, in _run_train
+    self._run_sanity_check()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1262, in _run_sanity_check
+    val_loop.run()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/dataloader/evaluation_loop.py", line 152, in advance
+    dl_outputs = self.epoch_loop.run(self._data_fetcher, dl_max_batches, kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/epoch/evaluation_epoch_loop.py", line 137, in advance
+    output = self._evaluation_step(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/epoch/evaluation_epoch_loop.py", line 234, in _evaluation_step
+    output = self.trainer._call_strategy_hook(hook_name, *kwargs.values())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1480, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/ddp_spawn.py", line 288, in validation_step
+    return self.model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1156, in forward
+    output = self._run_ddp_forward(*inputs, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1110, in _run_ddp_forward
+    return module_to_run(*inputs[0], **kwargs[0])  # type: ignore[index]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/overrides/base.py", line 110, in forward
+    return self._forward_module.validation_step(*inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/GRN/GRNformer/GRNFormer_updatedfeatures_v5.py", line 127, in validation_step
+    grn_pred_edge = self.forward(batch_data,batch_edges,batch_edge_attr)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/GRN/GRNformer/GRNFormer_updatedfeatures_v5.py", line 92, in forward
+    grnedges_lat = self.model.encode(data_sampled,edge_sampled,edge_attr)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch_geometric/nn/models/autoencoder.py", line 163, in encode
+    self.__mu__, self.__logstd__ = self.encoder(*args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/GRN/GRNformer/GRNFormerModels.py", line 77, in forward
+    x,edge_index = self.conv2(x,edge_index,edge_attr)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/GRN/GRNformer/GRNModelblocks.py", line 57, in forward
+    out, attention_weights = self.transformer_conv(x, edge_index, edge_attr,return_attention_weights=True)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch_geometric/nn/conv/transformer_conv.py", line 172, in forward
+    query = self.lin_query(x[1]).view(-1, H, C)
+            ^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch_geometric/nn/dense/linear.py", line 132, in forward
+    return F.linear(x, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: mat1 and mat2 shapes cannot be multiplied (100x128 and 64x3072)

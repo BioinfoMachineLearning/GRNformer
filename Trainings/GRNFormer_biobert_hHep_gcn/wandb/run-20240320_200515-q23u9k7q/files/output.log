@@ -1,0 +1,58 @@
+Traceback (most recent call last):
+  File "/home/aghktb/GRN/GRNformer/GRNFormer_updatedfeatures_v5.py", line 247, in <module>
+    train_GRNFormerLinkPred()
+  File "/home/aghktb/GRN/GRNformer/GRNFormer_updatedfeatures_v5.py", line 241, in train_GRNFormerLinkPred
+    trainer.test(dataloaders=test_loader, ckpt_path='best')
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 780, in test
+    return call._call_and_handle_interrupt(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/call.py", line 36, in _call_and_handle_interrupt
+    return trainer.strategy.launcher.launch(trainer_fn, *args, trainer=trainer, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 113, in launch
+    mp.start_processes(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 197, in start_processes
+    while not context.join():
+              ^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 160, in join
+    raise ProcessRaisedException(msg, error_index, failed_process.pid)
+torch.multiprocessing.spawn.ProcessRaisedException:
+-- Process 0 terminated with the following error:
+Traceback (most recent call last):
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 69, in _wrap
+    fn(i, *args)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 139, in _wrapping_function
+    results = function(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 829, in _test_impl
+    results = self._run(model, ckpt_path=self.ckpt_path)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1098, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1174, in _run_stage
+    return self._run_evaluate()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1214, in _run_evaluate
+    eval_loop_results = self._evaluation_loop.run()
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/dataloader/evaluation_loop.py", line 152, in advance
+    dl_outputs = self.epoch_loop.run(self._data_fetcher, dl_max_batches, kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/epoch/evaluation_epoch_loop.py", line 137, in advance
+    output = self._evaluation_step(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/epoch/evaluation_epoch_loop.py", line 234, in _evaluation_step
+    output = self.trainer._call_strategy_hook(hook_name, *kwargs.values())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1480, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/ddp_spawn.py", line 297, in test_step
+    return self.model.test_step(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: GRNFormerLinkPred.test_step() missing 1 required positional argument: 'dataloader_idx'

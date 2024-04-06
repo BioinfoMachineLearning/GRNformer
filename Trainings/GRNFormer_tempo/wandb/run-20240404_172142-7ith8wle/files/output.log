@@ -1,0 +1,101 @@
+Traceback (most recent call last):
+  File "/home/aghktb/GRN/GRNformer/GRNFlow_Train.py", line 296, in <module>
+    train_GRNFormerLinkPred()
+  File "/home/aghktb/GRN/GRNformer/GRNFlow_Train.py", line 289, in train_GRNFormerLinkPred
+    trainer.fit(model, train_loader, valid_loader)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 603, in fit
+    call._call_and_handle_interrupt(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/call.py", line 36, in _call_and_handle_interrupt
+    return trainer.strategy.launcher.launch(trainer_fn, *args, trainer=trainer, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 113, in launch
+    mp.start_processes(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 197, in start_processes
+    while not context.join():
+              ^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 160, in join
+    raise ProcessRaisedException(msg, error_index, failed_process.pid)
+torch.multiprocessing.spawn.ProcessRaisedException:
+-- Process 1 terminated with the following error:
+Traceback (most recent call last):
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 69, in _wrap
+    fn(i, *args)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 139, in _wrapping_function
+    results = function(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 645, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1098, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1177, in _run_stage
+    self._run_train()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1190, in _run_train
+    self._run_sanity_check()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1262, in _run_sanity_check
+    val_loop.run()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/dataloader/evaluation_loop.py", line 152, in advance
+    dl_outputs = self.epoch_loop.run(self._data_fetcher, dl_max_batches, kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/epoch/evaluation_epoch_loop.py", line 137, in advance
+    output = self._evaluation_step(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/epoch/evaluation_epoch_loop.py", line 234, in _evaluation_step
+    output = self.trainer._call_strategy_hook(hook_name, *kwargs.values())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1480, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/ddp_spawn.py", line 288, in validation_step
+    return self.model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1156, in forward
+    output = self._run_ddp_forward(*inputs, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1110, in _run_ddp_forward
+    return module_to_run(*inputs[0], **kwargs[0])  # type: ignore[index]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/overrides/base.py", line 110, in forward
+    return self._forward_module.validation_step(*inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/GRN/GRNformer/GRNFlow_Train.py", line 180, in validation_step
+    metric_auroc,metric_ap = self.valid_metrics(grn_pred_edge,all_edge_attr)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/collections.py", line 173, in forward
+    res = {k: m(*args, **m._filter_kwargs(**kwargs)) for k, m in self.items(keep_base=True, copy_state=False)}
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/collections.py", line 173, in <dictcomp>
+    res = {k: m(*args, **m._filter_kwargs(**kwargs)) for k, m in self.items(keep_base=True, copy_state=False)}
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/metric.py", line 236, in forward
+    self._forward_cache = self._forward_reduce_state_update(*args, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/metric.py", line 302, in _forward_reduce_state_update
+    self.update(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/metric.py", line 400, in wrapped_func
+    raise err
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/metric.py", line 390, in wrapped_func
+    update(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/classification/precision_recall_curve.py", line 141, in update
+    _binary_precision_recall_curve_tensor_validation(preds, target, self.ignore_index)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/functional/classification/precision_recall_curve.py", line 133, in _binary_precision_recall_curve_tensor_validation
+    _check_same_shape(preds, target)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torchmetrics/utilities/checks.py", line 41, in _check_same_shape
+    raise RuntimeError(
+RuntimeError: Predictions and targets are expected to have the same shape, but got torch.Size([100, 100]) and torch.Size([2, 10000]).
