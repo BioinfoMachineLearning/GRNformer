@@ -20,7 +20,7 @@ class Encoder(nn.Module):
     def forward(self,x,edge_index,edge_attr):
         #x, edge_index = x.x, x.train_pos_edge_index
         x= x.float()
-        print(x.shape,edge_index.shape,edge_attr.shape)
+        
         x,edge_index = self.encoder1(x,edge_index,edge_attr)
       
         x,edge_index = self.encoder2(x,edge_index[0],edge_index[1])

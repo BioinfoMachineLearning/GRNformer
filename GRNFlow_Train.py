@@ -28,7 +28,7 @@ from torch.utils.data import Dataset
 from torch_geometric.nn import GAE, VGAE, GCNConv,TransformerConv,Linear,BatchNorm,GATConv
 import wandb
 from torchmetrics import MetricCollection
-from torchmetrics.classification import AUROC,PrecisionRecallCurve,BinaryConfusionMatrix,AveragePrecision
+from torchmetrics.classification import BinaryF1Score,BinaryAUROC,BinaryConfusionMatrix,BinaryAveragePrecision,MultilabelAUROC,MultilabelAveragePrecision
 from torch.nn import BCELoss,BCEWithLogitsLoss
 import Dataset_activatinglabels_biobert as dt
 import Dataset_activatinglabels_biobert_test as dt_test
@@ -38,7 +38,7 @@ from torch_geometric.loader import NeighborLoader
 from torch.distributions import Normal
 from torch_geometric.utils import negative_sampling
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
-AVAIL_GPUS = [0,1]
+AVAIL_GPUS = [0]
 NUM_NODES = 1
 BATCH_SIZE = 1
 DATALOADERS = 1
@@ -85,7 +85,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         self.loss_fn = self.recon_loss
         #self.loss_fn = BCELoss()
         #self.kl =self.model.kl_loss
-        self.metrics = MetricCollection([AUROC(task='binary'),AveragePrecision(task='binary')])
+        self.metrics = MetricCollection([BinaryAUROC(),BinaryAveragePrecision(),BinaryF1Score()])
         #self.metrics = self.model.test
         self.train_metrics = self.metrics.clone(prefix="train_")
         #self.train_metrics = self.model.test
@@ -110,17 +110,21 @@ class GRNFormerLinkPred(pl.LightningModule):
 
         # Sample
         z = torch.cat((z1,z2),dim=1)
+        print(z)
         n = Normal(z.cuda(), torch.ones(z.size()).cuda())
         z = n.sample()
+        print("samples:",z)
         # Inverse
         z1,z2, log_det_zx = self.gnf.inverse(z,edge_index)
         log_det_zx = log_det_zx.unsqueeze(0).cuda()
         log_det_zx = log_det_zx.mm(torch.ones(log_det_zx.t().size()).cuda())
+        print(log_det_zx)
         # Decoder
         z = torch.cat((z1,z2),dim=1)
-        y, _ = self.decoder(z,edge_index,edge_attr1)
+        print(z)
+        y, edge_ind = self.decoder(z,edge_index,edge_attr1)
         #y_ind,_ = from_scipy_sparse_matrix(y)
-        return y,z
+        return y,edge_ind
     
     def recon_loss(self, z: Tensor, pos_edge_index: Tensor,
                    neg_edge_index: Tensor, target_adj: Tensor) -> Tensor:
@@ -141,7 +145,7 @@ class GRNFormerLinkPred(pl.LightningModule):
 
         neg_edges = 1- target_adj
         neg_loss = torch.nn.functional.binary_cross_entropy((1-z).view(-1),neg_edges.view(-1).float(),reduction="mean")
-
+        print(pos_loss+neg_loss)
         return pos_loss + neg_loss
 
     def configure_optimizers(self):
@@ -157,16 +161,19 @@ class GRNFormerLinkPred(pl.LightningModule):
         batch_edges = batch[1].squeeze(0).cuda()
         batch_edge_attr = torch.transpose(batch[5],0,1).float().cuda()
         bath_targ = batch[4].squeeze(0).cuda()
-        print(batch_edge_attr.shape)
         
-        grn_pred_edge,latz = self.forward(batch_data,batch_edges,batch_edge_attr)
+        
+        grn_pred_edge,pred_edgeindex = self.forward(batch_data,batch_edges,batch_edge_attr)
         batch_targ_pos = batch[2].squeeze(0).cuda()       
         batch_targ_neg = batch[3].squeeze(0).cuda()
-        print(batch_targ_pos.shape) 
+        print(grn_pred_edge)
+        
         loss = self.loss_fn(grn_pred_edge,batch_targ_pos,batch_targ_neg,bath_targ)
         #loss = loss + ( self.kl()/ len(batch_data)) 
         #all_edge_attr = torch.cat([batch_targ_pos,batch_targ_neg],dim=1)
-        metric_train = self.train_metrics(grn_pred_edge.view(-1),bath_targ.view(-1))
+        
+        
+        metric_train = self.train_metrics(grn_pred_edge.view(-1).cpu(),bath_targ.view(-1).cpu())
         #self.log_dict({"train_auroc":metric_auroc,"train_ap":metric_ap})
         self.log_dict(metric_train)
         
@@ -183,16 +190,17 @@ class GRNFormerLinkPred(pl.LightningModule):
         batch_targ_neg = batch[3].squeeze(0).cuda()
         bath_targ = batch[4].squeeze(0).cuda()
         loss = self.loss_fn(grn_pred_edge,batch_targ_pos,batch_targ_neg,bath_targ)
-        print(batch_targ_pos.shape) 
+         
         #loss = loss + (1 / len(batch_data)) * self.kl()
         #all_edge_attr = torch.cat([batch_targ_pos,batch_targ_neg],dim=1)
-        print(grn_pred_edge.view(-1).shape)
-        metric_valid = self.valid_metrics(grn_pred_edge.view(-1),bath_targ.view(-1))
+        #print(grn_pred_edge.view(-1),bath_targ.view(-1))
+        
+        metric_valid = self.valid_metrics(grn_pred_edge.view(-1).cpu(),bath_targ.view(-1).cpu())
 
         #self.log_dict({"valid_auroc":metric_auroc,"valid_ap":metric_ap})
         self.log_dict(metric_valid)
         self.log('valid_loss',loss, on_step=True, on_epoch=True, sync_dist=True)
-       
+        
     
     def test_step(self,batch, batch_idx,dataloader_idx):
         batch_data = batch[0].squeeze(0).cuda()
@@ -291,7 +299,7 @@ def train_GRNFormerLinkPred():
     valid_loader = DataLoader(dataset=dataset_valid, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers,persistent_workers=True)
     test_loader = DataLoader(dataset=dataset_test, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers,persistent_workers=True)
     #torch.save(test_loader,DATASET_DIR+'/test.pt')
-    model = GRNFormerLinkPred(learning_rate=1e-4,encoder_layers=args.encoder_layers)
+    model = GRNFormerLinkPred(learning_rate=1e-6,encoder_layers=args.encoder_layers)
     
     trainer = pl.Trainer(deterministic=True).from_argparse_args(args)
     checkpoint_callback = ModelCheckpoint(monitor='valid_loss', save_top_k=10, dirpath=args.save_dir, filename='GRNFormer_beeline_{epoch:02d}_{valid_loss:6f}')

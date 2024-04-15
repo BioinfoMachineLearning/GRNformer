@@ -1,0 +1,7 @@
+/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/call.py:48: UserWarning: Detected KeyboardInterrupt, attempting graceful shutdown...
+  rank_zero_warn("Detected KeyboardInterrupt, attempting graceful shutdown...")
+Exception ignored in: <module 'threading' from '/home/aghktb/miniconda3/envs/myenv/lib/python3.11/threading.py'>
+Traceback (most recent call last):
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/threading.py", line 1534, in _shutdown
+    def _shutdown():
+KeyboardInterrupt:

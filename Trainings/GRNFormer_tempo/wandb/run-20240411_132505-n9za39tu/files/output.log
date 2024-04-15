@@ -1,0 +1,135 @@
+Traceback (most recent call last):
+  File "/home/aghktb/GRN/GRNformer/GRNFlow_Train.py", line 314, in <module>
+    train_GRNFormerLinkPred()
+  File "/home/aghktb/GRN/GRNformer/GRNFlow_Train.py", line 307, in train_GRNFormerLinkPred
+    trainer.fit(model, train_loader, valid_loader)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 603, in fit
+    call._call_and_handle_interrupt(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/call.py", line 36, in _call_and_handle_interrupt
+    return trainer.strategy.launcher.launch(trainer_fn, *args, trainer=trainer, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 113, in launch
+    mp.start_processes(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 197, in start_processes
+    while not context.join():
+              ^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 160, in join
+    raise ProcessRaisedException(msg, error_index, failed_process.pid)
+torch.multiprocessing.spawn.ProcessRaisedException:
+-- Process 1 terminated with the following error:
+Traceback (most recent call last):
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/multiprocessing/spawn.py", line 69, in _wrap
+    fn(i, *args)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/launchers/multiprocessing.py", line 139, in _wrapping_function
+    results = function(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 645, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1098, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1177, in _run_stage
+    self._run_train()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1200, in _run_train
+    self.fit_loop.run()
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/epoch/training_epoch_loop.py", line 214, in advance
+    batch_output = self.batch_loop.run(kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/batch/training_batch_loop.py", line 88, in advance
+    outputs = self.optimizer_loop.run(optimizers, kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/optimization/optimizer_loop.py", line 200, in advance
+    result = self._run_optimization(kwargs, self._optimizers[self.optim_progress.optimizer_position])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/optimization/optimizer_loop.py", line 247, in _run_optimization
+    self._optimizer_step(optimizer, opt_idx, kwargs.get("batch_idx", 0), closure)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/optimization/optimizer_loop.py", line 357, in _optimizer_step
+    self.trainer._call_lightning_module_hook(
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1342, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/core/module.py", line 1661, in optimizer_step
+    optimizer.step(closure=optimizer_closure)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/core/optimizer.py", line 169, in step
+    step_output = self._strategy.optimizer_step(self._optimizer, self._optimizer_idx, closure, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/strategy.py", line 234, in optimizer_step
+    return self.precision_plugin.optimizer_step(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/plugins/precision/precision_plugin.py", line 121, in optimizer_step
+    return optimizer.step(closure=closure, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/optim/optimizer.py", line 280, in wrapper
+    out = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/optim/optimizer.py", line 33, in _use_grad
+    ret = func(self, *args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/optim/adam.py", line 121, in step
+    loss = closure()
+           ^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/plugins/precision/precision_plugin.py", line 107, in _wrap_closure
+    closure_result = closure()
+                     ^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/optimization/optimizer_loop.py", line 147, in __call__
+    self._result = self.closure(*args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/optimization/optimizer_loop.py", line 133, in closure
+    step_output = self._step_fn()
+                  ^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/loops/optimization/optimizer_loop.py", line 406, in _training_step
+    training_step_output = self.trainer._call_strategy_hook("training_step", *kwargs.values())
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/trainer/trainer.py", line 1480, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/strategies/ddp_spawn.py", line 280, in training_step
+    return self.model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1156, in forward
+    output = self._run_ddp_forward(*inputs, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1110, in _run_ddp_forward
+    return module_to_run(*inputs[0], **kwargs[0])  # type: ignore[index]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/lightning/pytorch/overrides/base.py", line 98, in forward
+    output = self._forward_module.training_step(*inputs, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/GRN/GRNformer/GRNFlow_Train.py", line 170, in training_step
+    print(grn_pred_edge)
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/_tensor.py", line 426, in __repr__
+    return torch._tensor_str._str(self, tensor_contents=tensor_contents)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/_tensor_str.py", line 636, in _str
+    return _str_intern(self, tensor_contents=tensor_contents)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/_tensor_str.py", line 567, in _str_intern
+    tensor_str = _tensor_str(self, indent)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/_tensor_str.py", line 327, in _tensor_str
+    formatter = _Formatter(get_summarized_data(self) if summarize else self)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aghktb/miniconda3/envs/myenv/lib/python3.11/site-packages/torch/_tensor_str.py", line 115, in __init__
+    nonzero_finite_vals = torch.masked_select(
+                          ^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: device-side assert triggered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
