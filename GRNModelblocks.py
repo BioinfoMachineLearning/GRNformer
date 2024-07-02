@@ -9,39 +9,8 @@ import math
 
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
-#class GRNFormer(nn.Module):
-#    def __init__(self, node_dimesion, edge_dimension, n_trans_layers):
-#        super(GRNFormer, self).__init__()
-#
-#        self.graphtrans = sp.GraphTransformer(
-#            dim = node_dimesion,
-#            depth = n_trans_layers,
-#            edge_dim = edge_dimension,             # optional - if left out, edge dimensions is assumed to be the same as the node dimensions above
-#            with_feedforwards = True,   # whether to add a feedforward after each attention layer, suggested by literature to be needed
-#            gated_residual = True,      # to use the gated residual to prevent over-smoothing
-#            rel_pos_emb = True       # set to True if the nodes are ordered, default to False
-#            #accept_adjacency_matrix = True
-#            )
-#
-#    
-#    def forward(self, data, edges ):
-#        
-#        
-#
-#        # Initializing hidden state for first input using method defined below
-#        
-#        x= data
-#        print(edges.dtype)
-#        
-#        # Passing in the input and hidden state into the model and obtaining outputs
-#        out, edges = self.graphtrans(x, edges)
-#        
-#        # Reshaping the outputs such that it can be fit into the fully connected layer
-#        #out = out.contiguous().view(-1, self.hidden_dim)
-#        #out = self.fc(out[:, -1, :])
-#        return out, edges
-#    
-#
+
+
 
 class GRNFormerLayerBlock(TransformerConv):
     def __init__(self, in_channels,out_channels,heads,**kwargs):
@@ -50,6 +19,8 @@ class GRNFormerLayerBlock(TransformerConv):
         self.transf1 = Linear(out_channels*heads,out_channels)
         self.b1 = BatchNorm(out_channels)
         self.gelu = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+        
 
     def forward(self, x, edge_index, edge_attr):
         x = x.float()
@@ -113,7 +84,30 @@ class Embedder(nn.Module):
         x = self.node_encoder(x)
         edge_attr = self.edge_encoder(edge_attr)
         return x, edge_attr
-    
+
+
+
+class SingleHeadAttention(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(SingleHeadAttention, self).__init__()
+        self.query_proj = nn.Linear(in_channels, out_channels)
+        self.key_proj = nn.Linear(in_channels, out_channels)
+        self.value_proj = nn.Linear(in_channels, out_channels)
+        self.out_proj = nn.Linear(out_channels, out_channels)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, query, key, value):
+        query = self.query_proj(query)
+        key = self.key_proj(key)
+        value = self.value_proj(value)
+        
+        attention_scores = torch.matmul(query, key.transpose(-2, -1)) / torch.sqrt(torch.tensor(key.size(-1), dtype=torch.float32))
+        attention_probs = self.softmax(attention_scores)
+        
+        context = torch.matmul(attention_probs, value)
+        return self.out_proj(context)
+
+
 class FullyConnectedGT_UGformerV2(nn.Module):
 
     def __init__(self, feature_dim_size, ff_hidden_size,
