@@ -2,3 +2,6 @@ wandb/
 *.log
 *.pt
 *.ckpt
+*.pt
+*.log
+BEELINE-*

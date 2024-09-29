@@ -28,7 +28,7 @@ for i in range(0,len()):
     plt.scatter(embedding['UMAP1'],embedding['UMAP2'])
 
 # Save PNG
-sns_plot.figure.savefig(DATASET_DIR+'/scRNARepresentationLearning/umap_scatter_gcen_raw.png', bbox_inches='tight', dpi=500)
+#sns_plot.figure.savefig(DATASET_DIR+'/scRNARepresentationLearning/umap_scatter_gcen_raw.png', bbox_inches='tight', dpi=500)
 
 
 

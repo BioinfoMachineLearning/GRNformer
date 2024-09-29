@@ -142,8 +142,8 @@ class Reconstruct(torch.nn.Module):
                 (default: :obj:`True`)
         """
         value = (z[edge_index[0]] * z[edge_index[1]]).sum(dim=1)
-        #return torch.sigmoid(value) if sigmoid else value
-        return value
+        return torch.sigmoid(value) if sigmoid else value
+        #return value
 class GAE(torch.nn.Module):
     r"""The Graph Auto-Encoder model from the
     `"Variational Graph Auto-Encoders" <https://arxiv.org/abs/1611.07308>`_
