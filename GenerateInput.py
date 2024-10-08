@@ -148,12 +148,12 @@ if num_genes > 0:
             gene_df.sort_values(by=var_col, inplace=True, ascending = False)
 
         variable_genes_new = gene_df.iloc[:num_genes].index.values
-    variable_genes = list(set(variable_genes_new) | set(variable_tfs))
-
+    variable_genes1 = list(set(variable_genes_new) | set(variable_tfs))
+    variable_genes = [x.upper() for x in variable_genes1]
 print("\nRestricting to %d genes" % (len(variable_genes)))
-expr_df = expr_df.loc[variable_genes]
+expr_df = expr_df.loc[variable_genes1]
 print("\nNew shape of Expression Data %d x %d" % (expr_df.shape[0],expr_df.shape[1]))
-
+expr_df.index=variable_genes
 expr_df.to_csv(opts.outPrefix+'-ExpressionData.csv')
 
 
@@ -163,6 +163,7 @@ if opts.netFile != 'None':
     netDF = netDF[(netDF.Gene1.isin(expr_df.index)) & (netDF.Gene2.isin(expr_df.index))]
     # Remove self-loops.
     netDF = netDF[netDF.Gene1 != netDF.Gene2]
+    
     # Remove duplicates (there are some repeated lines in the ground-truth networks!!!). 
     netDF.drop_duplicates(keep = 'first', inplace=True)
     netDF["Type"] = 1

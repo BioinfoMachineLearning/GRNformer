@@ -13,7 +13,8 @@ import glob
 import torch
 import lightning as pl
 from lightning.pytorch.loggers import WandbLogger
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
+
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor, Callback
 import torch.nn as nn
 import numpy as np
 from pandas import read_csv
@@ -24,32 +25,35 @@ from torch.nn import Module
 import seaborn as sns
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader,ConcatDataset
+from torch_geometric.loader import DataListLoader
 from torch.utils.data import Dataset
 from torch_geometric.nn import GCNConv,TransformerConv,Linear,BatchNorm, InnerProductDecoder
 import wandb
 from torchmetrics import MetricCollection
 from torchmetrics.classification import BinaryAUROC,BinaryAveragePrecision,BinaryConfusionMatrix,BinaryF1Score,BinaryAccuracy,BinaryJaccardIndex,BinaryPrecision,BinaryRecall
 from torch_geometric.utils import negative_sampling
-import DatasetMaker.DatasetwithTFcenter as dt
+from NegativeSampler import sample_embedding_based_negatives
+import DatasetMaker.DatasetwithTFcenter_hESC as dt
 from GRNFormerNewModels import EdgeTransformerEncoder_tcn,TransformerDecoder_tcn,EdgePredictor,VGAE,Reconstruct
 from NewEMbedderModel import TransformerAutoencoder
 from argparse import ArgumentParser
 from torch_geometric.utils import to_dense_adj
 from typing import Optional, Tuple
-from torch_geometric.loader import DataListLoader
-from sklearn.decomposition import PCA
-AVAIL_GPUS = [0]
+import tempfile
+import gc
+
+AVAIL_GPUS = [1]
 NUM_NODES = 1
 BATCH_SIZE = 1
-DATALOADERS = 1
+DATALOADERS = 128
 ACCELERATOR = "gpu"
 EPOCHS = 100
 NODES_DIM = 64
-EXP_CHANNEL=426
-BERT_CHANNEL=426
+EXP_CHANNEL=759
+BERT_CHANNEL=759
 EDGE_DIM = 1
-NUM_HEADS = 8
-ENCODE_LAYERS = 6
+NUM_HEADS = 4
+ENCODE_LAYERS = 3
 OUT_CH=16
 DATASET_DIR = "./"
 
@@ -70,7 +74,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Choose 
 
 
 CHECKPOINT_PATH = f"{DATASET_DIR}/GRNformer_TFcenter_ChipseqhHep_6l_4h_16o"
-#os.makedirs(CHECKPOINT_PATH, exist_ok=True)
+os.makedirs(CHECKPOINT_PATH, exist_ok=True)
 class PretrainedEmbeddingModel(nn.Module):
     def __init__(self, pretrained_model):
         super(PretrainedEmbeddingModel, self).__init__()
@@ -83,42 +87,41 @@ class PretrainedEmbeddingModel(nn.Module):
         return embeddings
 
 class GRNFormerLinkPred(pl.LightningModule):
-    def __init__(self, codoformer,learning_rate=1e-4,node_dim=NODES_DIM,out_chan=OUT_CH,num_heads=NUM_HEADS,edge_dim=EDGE_DIM,encoder_layers=ENCODE_LAYERS, **model_kwargs):
+    def __init__(self, codoformer, learning_rate=1e-4,node_dim=NODES_DIM,out_chan=OUT_CH,num_heads=NUM_HEADS,edge_dim=EDGE_DIM,encoder_layers=ENCODE_LAYERS, **model_kwargs):
         super().__init__()
         
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['codoformer'])
         #self.model = VGAE(VariationalGCNEncoder(node_dim, out_chan))
-        self.embed =  codoformer
+        #self.embed = TransformerAutoencoder(embed_dim=NODES_DIM,nhead=4,num_layers=2)
+        self.embed = codoformer
         self.model = VGAE(encoder=EdgeTransformerEncoder_tcn(node_dim, out_chan,num_head=num_heads,edge_dim=edge_dim,num_layers=encoder_layers),decoder=TransformerDecoder_tcn(latent_dim=out_chan,out_channels=node_dim,num_head=num_heads,num_layers=encoder_layers,edge_dim=edge_dim))
         self.edgepred = EdgePredictor(latent_dim=out_chan)
         self.reconstruct = Reconstruct()
         self.criterian = nn.BCELoss()
         self.loss_fn = self.recon_loss
         self.kl =self.model.kl_loss
-        self.metrics = MetricCollection([BinaryAUROC(),BinaryAveragePrecision(),BinaryF1Score(threshold=0.5),BinaryAccuracy(threshold=0.5),BinaryJaccardIndex(threshold=0.5),BinaryRecall(threshold=0.5),BinaryPrecision(threshold=0.5)])
+        self.metrics = MetricCollection([BinaryAUROC(),BinaryAveragePrecision(),BinaryF1Score(),BinaryAccuracy(),BinaryJaccardIndex(),BinaryRecall(),BinaryPrecision()])
         #self.metrics = self.test
-        #self.train_metrics_1 = self.metrics.clone(prefix="train_")
-        #self.train_metrics = self.test
-        #self.valid_metrics_1 = self.metrics.clone(prefix="valid_")
-        #self.valid_metrics = self.test
+        self.train_metrics_1 = self.metrics.clone(prefix="train_")
+        self.train_metrics = self.test
+        self.valid_metrics_1 = self.metrics.clone(prefix="valid_")
+        self.valid_metrics = self.test
         self.test_metrics_1 = self.metrics.clone(prefix="test_")
         self.test_metrics = self.test
 
     def forward(self, exp_data,bert_data,edge_sampled,edge_attr):
 
         z = self.embed(exp_data)
-        print(z.shape)
+        #print(z.shape)
         x = z.squeeze()
-        edge_attr = edge_attr.unsqueeze(1)
-        print(edge_attr.shape)
         grnnodes_lat, grnedges_lat= self.model.encode(x,edge_sampled,edge_attr)
-        #z,grn_edges = self.model.decode(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
+        grnnodes_lat,grn_edges = self.model.decode(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
         #print(z.shape,grn_edges.shape)
-        edge_prob =self.edgepred(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
+        edge_prob =self.edgepred(z,grnedges_lat[0],grnedges_lat[1])
         #print(edge_prob.shape)
         return edge_prob,z
     
-    def recon_loss(self, z: Tensor, pos_edge_index: Tensor,
+    def recon_loss(self, z: Tensor,emb:Tensor, pos_edge_index: Tensor,
                    neg_edge_index: Optional[Tensor]=None) -> Tensor:
         r"""Given latent variables :obj:`z`, computes the binary cross
         entropy loss for positive edges :obj:`pos_edge_index` and negative
@@ -134,7 +137,9 @@ class GRNFormerLinkPred(pl.LightningModule):
         #print(pos_edge_index)
         """
         if neg_edge_index is None:
-            neg_edge_index = negative_sampling(pos_edge_index, z.size(0),num_neg_samples=pos_edge_index.size(1))
+            neg_edge_index = negative_sampling(pos_edge_index, z.size(0))
+            #neg_edge_index = sample_embedding_based_negatives(emb,pos_edge_index,pos_edge_index.shape[1],threshold=0.5)
+        #print(pos_edge_index,neg_edge_index)
         pos_y = z.new_ones(pos_edge_index.size(1))
         neg_y = z.new_zeros(neg_edge_index.size(1))
         y = torch.cat([pos_y, neg_y], dim=0)
@@ -149,7 +154,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         #y_flat = y.view(-1)
         ##print(pred.shape,y.shape,y_flat.shape)
         loss = self.criterian(pred,y)
-        klloss = self.kl()
+        klloss = self.kl()*1/len(z)
         #pos_loss = -torch.log(
         #    self.model.decoder(z, pos_edge_index) + EPS).mean()
 
@@ -184,7 +189,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         pos_pred = self.reconstruct(z, pos_edge_index,sigmoid=True)
         neg_pred = self.reconstruct(z, neg_edge_index,sigmoid=True)
         preds = torch.cat([pos_pred, neg_pred], dim=0)
-        print(pos_pred,neg_pred)
+        
         #y, pred = y.detach().cpu().numpy(), pred.detach().cpu().numpy()
         #preds = z.view(-1)
         #num_nodes = z.size(0)
@@ -193,127 +198,118 @@ class GRNFormerLinkPred(pl.LightningModule):
         y_flat = y
         if prefix=="train":
             metrics = self.train_metrics_1(preds,y_flat.int())
-            return metrics
         elif prefix=="valid":
             metrics = self.valid_metrics_1(preds,y_flat.int())
-            return metrics
         elif prefix=="test":
             metrics = self.test_metrics_1(preds,y_flat.int())
-            conf_mat = BinaryConfusionMatrix(threshold=0.5)
-            conf_vals = conf_mat(preds,y)
-            return metrics,conf_vals,pos_pred
         else:
             metrics = self.metrics(preds,y_flat.int())
-            return metrics
+        return metrics
     
-    #def configure_optimizers(self):
-    #    optimizer = torch.optim.Adamax(self.parameters(), lr=self.hparams.learning_rate)
-    #    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.1, patience=10, eps=1e-10, verbose=True)
-    #    metric_to_track = 'valid_loss'
-    #    return{'optimizer':optimizer,
-    #           'lr_scheduler':lr_scheduler,
-    #           'monitor':metric_to_track}
-    '''
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-2,weight_decay=0.00001)
+        #lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.1, patience=5, eps=1e-10)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
+        metric_to_track = 'valid_loss'
+        return{'optimizer':optimizer,
+               'lr_scheduler':lr_scheduler,
+               'monitor':metric_to_track}
+    
     def training_step(self,batch,batch_idx):
-        batch_exp_data = batch[0].cuda()
+        batch_exp_data = batch[0][0].unsqueeze(0).float().cuda()
         
-        batch_bert_data = batch[0].cuda()
+        batch_bert_data = batch[0][0].cuda()
+        #print(batch_bert_data.shape)
+        batch_edges = batch[0][1].squeeze(0).cuda()
         
-        batch_edges = batch[1].squeeze(0).cuda()
-        batch_edge_attr =torch.transpose(batch[2],0,1).float().cuda()
+        batch_edge_attr =batch[0][2].float().cuda()
 
 
-        grn_pred_edge = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
+        grn_pred_edge,z = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
 
-        batch_targ_pos = batch[3].squeeze(0).cuda()   
+        batch_targ_pos = batch[0][3].cuda()   
           
         #batch_targ_neg = batch[3].squeeze(0).cuda()
         #batch_tar_mat = batch[4].float().cuda()
         
         #loss = (self.loss_fn(grn_pred_edge.float(),batch_tar_mat.view(-1))+EPS).mean()
-        loss,neg_edge = self.loss_fn(grn_pred_edge,batch_targ_pos)
+        loss,neg_edge = self.loss_fn(grn_pred_edge,z,batch_targ_pos)
         #loss = loss_pos.mean()+loss_neg.mean()
         #loss = loss + (1 / len(batch_exp_data)) * self.kl()
         
         metrics = self.train_metrics(grn_pred_edge,batch_targ_pos,neg_edge,prefix="train")
         #self.log_dict({"train_auroc":metric_auroc,"train_ap":metric_ap},sync_dist=True)
-        self.log_dict(metrics)
+        self.log_dict(metrics,on_epoch=True)
         
         self.log('train_loss',loss, on_step=True, on_epoch=True, sync_dist=True)
         return loss
-    
+    def training_epoch_end(self, outputs):
+        # Clear memory or temporary files
+        torch.cuda.empty_cache()
+        gc.collect()
+
+        #temp_data_path =  tempfile.gettempdir()
+        #f os.path.exists(temp_data_path):
+        #    os.remove(temp_data_path)
+
+        self.log('memory_cleared', True)
     def validation_step(self,batch,batch_idx):
-        batch_exp_data = batch[0].cuda()
-        batch_bert_data = batch[0].cuda()
+        batch_exp_data = batch[0][0].unsqueeze(0).float().cuda()
+        
+        batch_bert_data = batch[0][0].cuda()
         #print(batch_bert_data.shape)
-        batch_edges = batch[1].squeeze(0).cuda()
-        batch_edge_attr =torch.transpose(batch[2],0,1).float().cuda()
+        batch_edges = batch[0][1].squeeze(0).cuda()
+        #batch_edge_attr =torch.transpose(batch[0][2],0,1).float().cuda()
+        batch_edge_attr =batch[0][2].float().cuda()
         #print(batch_edge_attr)
+        #print(batch_edges.shape,batch_edge_attr.shape)
+        batch_targ_pos = batch[0][3].cuda()  
         
-        batch_targ_pos = batch[3].squeeze(0).cuda()
-        
-        grn_pred_edge = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
+        grn_pred_edge,z = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
         #print(grn_pred_edge.shape)
         #print(batch_targ_pos.shape)
         #loss = (self.loss_fn(grn_pred_edge.float(),batch_tar_mat.view(-1))+EPS).mean()
-        loss,neg_edge = self.loss_fn(grn_pred_edge,batch_targ_pos)
+        loss,neg_edge = self.loss_fn(grn_pred_edge,z,batch_targ_pos)
         #loss = loss_pos.mean()+loss_neg.mean()
         #loss = loss + (1 / len(batch_exp_data)) * self.kl()
         #loss = loss + (1 / len(batch_data)) * self.kl()
         metrics = self.valid_metrics(grn_pred_edge,batch_targ_pos,neg_edge,prefix="valid")
-        self.log_dict(metrics,sync_dist=True)
+        self.log_dict(metrics,sync_dist=True,batch_size=1,on_epoch=True)
         #self.log_dict({"valid_auroc":metric_auroc,"valid_ap":metric_ap},sync_dist=True)
         self.log('valid_loss',loss, on_step=True, on_epoch=True, sync_dist=True)
        
-    '''
-    def reduce_dimensionality_with_pca(self,data, fixed_length=EXP_CHANNEL):
-        pca = PCA(n_components=fixed_length)
-        reduced_data = torch.as_tensor(pca.fit_transform(data),dtype=torch.float64)
-        return reduced_data.unsqueeze(0)
+    
     def test_step(self,batch, batch_idx):
-        #print(batch[0].shape)
-        #red_data = self.reduce_dimensionality_with_pca(batch[0].squeeze())
-        #print(red_data.shape,red_data.dtype)
-        batch_exp_data = batch[0][0].unsqueeze(0).float()#.cuda()
+        batch_exp_data = batch[0][0].unsqueeze(0).float().cuda()
         
-        batch_bert_data = batch[0][0]#.cuda()
+        batch_bert_data = batch[0][0].cuda()
         #print(batch_bert_data.shape)
-        batch_edges = batch[0][1].squeeze(0)#.cuda()
-        batch_edge_attr =batch[0][2].float()#.cuda()
+        batch_edges = batch[0][1].squeeze(0).cuda()
+        batch_edge_attr =batch[0][2].float().cuda()
 
 
         grn_pred_edge,z = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
-        batch_targ_pos = batch[0][3]#.cuda()  
+        batch_targ_pos = batch[0][3].cuda()  
         
         #loss = (self.loss_fn(grn_pred_edge.float(),batch_tar_mat.view(-1))+EPS).mean()
-        loss,neg_edge = self.loss_fn(grn_pred_edge,batch_targ_pos)
+        loss,neg_edge = self.loss_fn(grn_pred_edge,z,batch_targ_pos)
         #loss = loss_pos.mean()+loss_neg.mean()
         #loss = loss + (1 / len(batch_exp_data)) * self.kl()
         #loss = loss + (1 / len(batch_data)) * self.kl()
-        metrics,conf_val,preds = self.test_metrics(grn_pred_edge,batch_targ_pos,neg_edge_index=neg_edge,prefix="test")
+        metrics = self.test_metrics(grn_pred_edge,batch_targ_pos,neg_edge_index=neg_edge,prefix="test")
         #self.log_dict({"test_auroc":metric_auroc,"test_ap":metric_ap},sync_dist=True)
-        self.log_dict(metrics,sync_dist=True)
-        fig, ax = plt.subplots()
-        sns.heatmap(conf_val , annot=True, cmap="Blues", fmt="d")
-        plt.title("Confusion Matrix")
-        plt.tight_layout()
-        wandb.log({f"Confusion Matrix" :wandb.Image(fig)})
+        self.log_dict(metrics,sync_dist=True,on_epoch=True)
+       
+        #conf_mat = BinaryConfusionMatrix().to("cuda")
+        #conf_vals = conf_mat(grn_pred_edge,batch_tar_mat.view(-1).int())
         #print("Test Data Confusion Matrix: \n")
         #print(conf_vals)
         
         self.log('test_loss',loss, on_step=True, on_epoch=True, sync_dist=True)
-        return {f'preds_grn' : grn_pred_edge,f'target_grnindex':batch_targ_pos,f'preds':preds}
 
-    def test_epoch_end(self,outputs):
-        # Log individual results for each dataset
-        
-        #for i  in range(len(outputs)):
-            dataset_outputs = outputs
-            torch.save(dataset_outputs,"GRN_Predictions_hHepChipseq1.pt")
-            #genes = pd.read_csv('C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/Filtered--ExpressionData.csv',index_col=0).index
-
-
-
+    def on_load_checkpoint(self, checkpoint):
+        #self.embed.update_projection(EXP_CHANNEL)
+        self.load_state_dict(checkpoint['state_dict'], strict=False)
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
@@ -322,6 +318,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         parser.add_argument('--encoder_layers',type=int,default=ENCODE_LAYERS)
         parser.add_argument('--edge_dim',type=int,default=EDGE_DIM)
         return parser
+
 def load_pretrained_model_from_checkpoint(checkpoint_path, model_class):
     model = model_class(embed_dim=NODES_DIM,nhead=4,num_layers=2)  # Initialize your model class
     checkpoint = torch.load(checkpoint_path)  # Load checkpoint
@@ -335,6 +332,7 @@ def load_pretrained_model_from_checkpoint(checkpoint_path, model_class):
     model.load_state_dict(new_state_dict)  # Load state_dict from checkpoint
     model.eval()  # Set to evaluation mode to freeze parameters
     return model
+
 def train_GRNFormerLinkPred():
     pl.seed_everything(123)
     parser = ArgumentParser()
@@ -358,72 +356,118 @@ def train_GRNFormerLinkPred():
                              "Enter True or num of batch you want to send, " "eg. 1 or 7")
     args = parser.parse_args()
     
-    #args.devices = args.num_gpus
+    args.devices = args.num_gpus
     args.num_nodes = args.nodes
-    #args.accelerator = ACCELERATOR
-    args.max_epochs = args.num_epochs
+    args.accelerator = ACCELERATOR
+    args.max_epochs = EPOCHS
     args.fast_dev_run = args.unit_test
     args.log_every_n_steps = 1
     args.detect_anomaly = True
-    args.enable_model_summary = True
-    args.weights_summary = "full"
+    #args.enable_model_summary = True
+    #args.weights_summary = "full"
+    #args.precision_plugin=MyNativeMixedPrecisionPlugin(precision=16),
+    #args.gradient_clip_val=0.5
+    args.auto_lr_find=True
+
+    #args.fast_dev_run=True
     os.makedirs(DATASET_DIR+"/"+args.save_dir, exist_ok=True)
-    root = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep',
-          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E',
-          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM']
-    gene_expression_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESCChipsec-ExpressionData.csv']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/ExpressionData.csv',
-                          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/ExpressionData.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/ExpressionData.csv',
-                          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv']
+    root = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC','/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep',
+            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E',
+            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM']
+    gene_expression_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/ExpressionData.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/ExpressionData.csv',
+                            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/ExpressionData.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/ExpressionData.csv',
+                            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv']
     tfhum_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/TFHumans.csv",header=None)[0].to_list()
-    #tfmou_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/mESC/TFMouse.csv")['TF'].to_list()
-    TF_list = [tfhum_genes]#,tfhum_genes,tfmou_genes,tfmou_genes,tfmou_genes]
+    tfmou_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/TFMouse.csv")['TF'].to_list()
+    TF_list = [tfhum_genes,tfhum_genes,tfmou_genes,tfmou_genes,tfmou_genes]
     # replace with actual TF gene names
-    regulation_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESCChipsec-network1.csv']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/hHep_combined.csv',
-                      # '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/mDC_combined.csv', '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv',
-                       # '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv']
-    #split_ind = ["Data/sc-RNA-seq/hESC/dataset_splits_combined.pt"]#,"/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/dataset_splits_combined.pt",
-               # "/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/dataset_splits_combined.pt" ,"/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt",
-               # "/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"]
-   
+    regulation_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESC_combined.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/hHep_combined.csv',
+                       '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/mDC_combined.csv', '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv',
+                        '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv']
+    split_ind = ["/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/dataset_splits_combined.pt","/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/dataset_splits_combined.pt",
+                "/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/dataset_splits_combined.pt" ,"/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt",
+                "/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"]
+    All_train_dataset=[]
+    All_valid_dataset=[]
     All_test_dataset=[]
-    for i in range(len(root)):
+    for i in range(0,5):
 
         dataset = dt.GeneExpressionDataset(root[i],gene_expression_file[i],TF_list[i],regulation_file[i])
 
-   
-        #split_indices = torch.load(split_ind[i],weights_only=True)
+        print(len(dataset))
+        #train_size = int(0.71 * len(dataset))
+        #val_size = int(0.1 * len(dataset))
+        #test_size = len(dataset) - (train_size+val_size)
+        #dataset_train,dataset_valid,dataset_test = torch.utils.data.random_split(dataset, [train_size, val_size,test_size])
 
-        #test_indices = split_indices['test_indices']
+        #dataset_valid = MicrographDataValid(DATASET_DIR)
+        #dataset_test = torch.load(DATASET_DIR+'/test.pt') # using validation data for testing here
+        split_indices = torch.load(split_ind[i],weights_only=True)
+        train_indices = split_indices['train_indices']
+        valid_indices = split_indices['valid_indices']
+        test_indices = split_indices['test_indices']
 
+        # Create Subsets using the loaded indices
+        train_dataset = torch.utils.data.Subset(dataset, train_indices)
+        valid_dataset = torch.utils.data.Subset(dataset, valid_indices)
+        test_dataset = torch.utils.data.Subset(dataset, test_indices)
+        All_train_dataset.append(train_dataset)
+        All_valid_dataset.append(valid_dataset)
+        All_test_dataset.append(test_dataset)
 
-        #test_dataset = torch.utils.data.Subset(dataset, test_indices)
-
-        All_test_dataset.append(dataset)
-
+    TrainDatasets = ConcatDataset(All_train_dataset)
+    ValidDatasets = ConcatDataset(All_valid_dataset)
     TestDatasets = ConcatDataset(All_test_dataset)
-  
+    train_loader = DataListLoader(dataset=TrainDatasets, batch_size=BATCH_SIZE, shuffle=True, num_workers=args.num_dataloader_workers)
+    #print(train_size)
+    valid_loader = DataListLoader(dataset=ValidDatasets, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
     test_loader = DataListLoader(dataset=TestDatasets, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
     #test_loader = DataLoader(dataset=dataset_test, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
     #torch.save(test_loader,DATASET_DIR+'/test.pt')
     #emb = TransformerAutoencoder(embed_dim=NODES_DIM,nhead=4,num_layers=2)
-    checkpoint_path = "./Embedding_hep_esc_mdc_mhscEgm/GRNFormer_beeline_epoch=01_valid_loss=0.000531.ckpt"
+    checkpoint_path = "/home/aghktb/GRNformer/Embedding_hep_esc_mdc_mhscEgm/GRNFormer_beeline_epoch=01_valid_loss=0.000531.ckpt"
     pretrained_model = load_pretrained_model_from_checkpoint(checkpoint_path, TransformerAutoencoder)
     embedding_model = PretrainedEmbeddingModel(pretrained_model)
-    model = GRNFormerLinkPred(codoformer=embedding_model,learning_rate=1e-3)
-    #test_loader = DataLoader(dataset=dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
-   # print(len(test_loader))
-    #torch.save(test_loader,DATASET_DIR+'/test.pt')
-    #model = GRNFormerLinkPred(learning_rate=1e-4)
-    print("Model loaded")
+    model = GRNFormerLinkPred(codoformer=embedding_model,learning_rate=1e-2)
+    
     trainer = pl.Trainer.from_argparse_args(args)
-    #checkpoint_callback = ModelCheckpoint(monitor='valid_loss', save_top_k=10, dirpath=DATASET_DIR+"/"+args.save_dir, filename='GRNFormer_beeline_{epoch:02d}_{valid_loss:6f}')
-    #lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    #early_stopping_callback = EarlyStopping(monitor='valid_loss', mode='min', min_delta=0.0, patience=20)
-   # trainer.callbacks = [checkpoint_callback, lr_monitor, early_stopping_callback]
+    
+
+    checkpoint_callback = ModelCheckpoint(monitor='valid_loss', save_top_k=10, dirpath=DATASET_DIR+"/"+args.save_dir, filename='GRNFormer_beeline_{epoch:02d}_{valid_loss:6f}')
+    lr_monitor = LearningRateMonitor(logging_interval='epoch')
+    early_stopping_callback = EarlyStopping(monitor='valid_loss', mode='min', min_delta=0.0, patience=20)
+    trainer.callbacks = [checkpoint_callback, lr_monitor, early_stopping_callback]
     logger = WandbLogger(project=args.project_name, entity=args.entity_name, name=args.save_dir, offline=False, save_dir=".")
     trainer.logger = logger
-    #trainer.fit(model, train_loader, valid_loader,ckpt_path="/home/aghktb/GRNformer/GRNFormer_TFCENTER_NegEdges_withdecode_v2_resume/GRNFormer_beeline_epoch=52_valid_loss=0.587835.ckpt")
-    trainer.test(model,dataloaders=test_loader, ckpt_path='./GRNFormerWithPretrainedcodoformer_head8_v2/GRNFormer_beeline_epoch=13_valid_loss=0.689444.ckpt')
+    new_lr = 1e-2
+    # Load the checkpoint
+    #checkpoint_path = "GRNFormerWithPretrainedcodoformer_lr1e3/GRNFormer_beeline_epoch=32_valid_loss=0.690316.ckpt"
+    #model = model.load_from_checkpoint(checkpoint_path,codoformer=embedding_model,lr=0.01)
+    # Access the optimizer from the LightningModule
+    #optimizer = model.configure_optimizers()  # Get the first optimizer, if you have multiple
+    #print(optimizer)
+    # Update the learning rate
+    #for param_group in optimizer['optimizer']:
+    #    param_group['lr'] = new_lr  # Set the new learning rate
+
+# Load the checkpoint
+    #checkpoint = model.load("C:/Users/aghktb/Documents/GRN/GRNformer/hHESCSpecific_GTND/GRNFormer_beeline_epoch=47_valid_loss=0.692046.ckpt")
+    #for optimizer in checkpoint['optimizer_states']:
+    #    for param_group in optimizer['param_groups']:
+    #        param_group['lr'] = new_lr
+    trainer.tune(model,train_loader,valid_loader)
+    # Create a learning rate finder manually
+    lr_finder = trainer.tuner.lr_find(model,train_loader)
+
+    # Plot the results
+    fig = lr_finder.plot(suggest=True)
+    wandb.log({"LE Finder":wandb.Image(fig)})
+
+    # Access the suggested learning rate
+    new_lr = lr_finder.suggestion()
+    trainer.fit(model,train_loader, valid_loader)
+    
+    trainer.test(dataloaders=test_loader, ckpt_path='best')
    
 
 

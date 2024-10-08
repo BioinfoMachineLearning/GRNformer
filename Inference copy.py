@@ -23,7 +23,7 @@ import re
 from torch.nn import Module
 import seaborn as sns
 import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader,ConcatDataset
+from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from torch_geometric.nn import GCNConv,TransformerConv,Linear,BatchNorm, InnerProductDecoder
 import wandb
@@ -32,7 +32,7 @@ from torchmetrics.classification import BinaryAUROC,BinaryAveragePrecision,Binar
 from torch_geometric.utils import negative_sampling
 import DatasetMaker.DatasetwithTFcenter as dt
 from GRNFormerNewModels import EdgeTransformerEncoder_tcn,TransformerDecoder_tcn,EdgePredictor,VGAE,Reconstruct
-from NewEMbedderModel import TransformerAutoencoder
+from GRNembedding import Embeddings
 from argparse import ArgumentParser
 from torch_geometric.utils import to_dense_adj
 from typing import Optional, Tuple
@@ -48,10 +48,10 @@ NODES_DIM = 64
 EXP_CHANNEL=426
 BERT_CHANNEL=426
 EDGE_DIM = 1
-NUM_HEADS = 8
-ENCODE_LAYERS = 6
+NUM_HEADS = 4
+ENCODE_LAYERS = 3
 OUT_CH=16
-DATASET_DIR = "./"
+DATASET_DIR = "C:/Users/aghktb/Documents/GRN/GRNformer"
 
 EPS = 1e-15
 
@@ -71,31 +71,22 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Choose 
 
 CHECKPOINT_PATH = f"{DATASET_DIR}/GRNformer_TFcenter_ChipseqhHep_6l_4h_16o"
 #os.makedirs(CHECKPOINT_PATH, exist_ok=True)
-class PretrainedEmbeddingModel(nn.Module):
-    def __init__(self, pretrained_model):
-        super(PretrainedEmbeddingModel, self).__init__()
-        self.pretrained_model = pretrained_model
-        self.pretrained_model.eval()  # Set to evaluation mode
 
-    def forward(self, x):
-        with torch.no_grad():  # Disable gradient calculations
-            x,embeddings = self.pretrained_model(x)  # Extract embeddings
-        return embeddings
 
 class GRNFormerLinkPred(pl.LightningModule):
-    def __init__(self, codoformer,learning_rate=1e-4,node_dim=NODES_DIM,out_chan=OUT_CH,num_heads=NUM_HEADS,edge_dim=EDGE_DIM,encoder_layers=ENCODE_LAYERS, **model_kwargs):
+    def __init__(self, learning_rate=1e-4,node_dim=NODES_DIM,out_chan=OUT_CH,num_heads=NUM_HEADS,edge_dim=EDGE_DIM,encoder_layers=ENCODE_LAYERS, **model_kwargs):
         super().__init__()
         
         self.save_hyperparameters()
         #self.model = VGAE(VariationalGCNEncoder(node_dim, out_chan))
-        self.embed =  codoformer
+        self.embed = Embeddings(exp_channel=EXP_CHANNEL,bert_channel=BERT_CHANNEL,out_channels=NODES_DIM)
         self.model = VGAE(encoder=EdgeTransformerEncoder_tcn(node_dim, out_chan,num_head=num_heads,edge_dim=edge_dim,num_layers=encoder_layers),decoder=TransformerDecoder_tcn(latent_dim=out_chan,out_channels=node_dim,num_head=num_heads,num_layers=encoder_layers,edge_dim=edge_dim))
         self.edgepred = EdgePredictor(latent_dim=out_chan)
         self.reconstruct = Reconstruct()
-        self.criterian = nn.BCELoss()
+        self.criterian = nn.BCEWithLogitsLoss()
         self.loss_fn = self.recon_loss
         self.kl =self.model.kl_loss
-        self.metrics = MetricCollection([BinaryAUROC(),BinaryAveragePrecision(),BinaryF1Score(threshold=0.5),BinaryAccuracy(threshold=0.5),BinaryJaccardIndex(threshold=0.5),BinaryRecall(threshold=0.5),BinaryPrecision(threshold=0.5)])
+        self.metrics = MetricCollection([BinaryAUROC(),BinaryAveragePrecision(),BinaryF1Score(threshold=0.8),BinaryAccuracy(threshold=0.8),BinaryJaccardIndex(threshold=0.8),BinaryRecall(threshold=0.8),BinaryPrecision(threshold=0.8)])
         #self.metrics = self.test
         #self.train_metrics_1 = self.metrics.clone(prefix="train_")
         #self.train_metrics = self.test
@@ -106,17 +97,15 @@ class GRNFormerLinkPred(pl.LightningModule):
 
     def forward(self, exp_data,bert_data,edge_sampled,edge_attr):
 
-        z = self.embed(exp_data)
-        print(z.shape)
-        x = z.squeeze()
-        edge_attr = edge_attr.unsqueeze(1)
-        print(edge_attr.shape)
+        x = self.embed(exp_data,bert_data)
+        
+        x = x.squeeze()
         grnnodes_lat, grnedges_lat= self.model.encode(x,edge_sampled,edge_attr)
         #z,grn_edges = self.model.decode(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
         #print(z.shape,grn_edges.shape)
         edge_prob =self.edgepred(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
         #print(edge_prob.shape)
-        return edge_prob,z
+        return edge_prob
     
     def recon_loss(self, z: Tensor, pos_edge_index: Tensor,
                    neg_edge_index: Optional[Tensor]=None) -> Tensor:
@@ -134,7 +123,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         #print(pos_edge_index)
         """
         if neg_edge_index is None:
-            neg_edge_index = negative_sampling(pos_edge_index, z.size(0),num_neg_samples=pos_edge_index.size(1))
+            neg_edge_index = negative_sampling(pos_edge_index, z.size(0))
         pos_y = z.new_ones(pos_edge_index.size(1))
         neg_y = z.new_zeros(neg_edge_index.size(1))
         y = torch.cat([pos_y, neg_y], dim=0)
@@ -184,7 +173,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         pos_pred = self.reconstruct(z, pos_edge_index,sigmoid=True)
         neg_pred = self.reconstruct(z, neg_edge_index,sigmoid=True)
         preds = torch.cat([pos_pred, neg_pred], dim=0)
-        print(pos_pred,neg_pred)
+        
         #y, pred = y.detach().cpu().numpy(), pred.detach().cpu().numpy()
         #preds = z.view(-1)
         #num_nodes = z.size(0)
@@ -199,7 +188,7 @@ class GRNFormerLinkPred(pl.LightningModule):
             return metrics
         elif prefix=="test":
             metrics = self.test_metrics_1(preds,y_flat.int())
-            conf_mat = BinaryConfusionMatrix(threshold=0.5)
+            conf_mat = BinaryConfusionMatrix(threshold=0.8)
             conf_vals = conf_mat(preds,y)
             return metrics,conf_vals,pos_pred
         else:
@@ -274,16 +263,15 @@ class GRNFormerLinkPred(pl.LightningModule):
         #print(batch[0].shape)
         #red_data = self.reduce_dimensionality_with_pca(batch[0].squeeze())
         #print(red_data.shape,red_data.dtype)
-        batch_exp_data = batch[0][0].unsqueeze(0).float()#.cuda()
+        batch_exp_data = batch[0]#.cuda()
+        batch_bert_data = batch[0]#.cuda()
         
-        batch_bert_data = batch[0][0]#.cuda()
-        #print(batch_bert_data.shape)
-        batch_edges = batch[0][1].squeeze(0)#.cuda()
-        batch_edge_attr =batch[0][2].float()#.cuda()
+        batch_edges = batch[1].squeeze(0)#.cuda()
+        batch_edge_attr =torch.transpose(batch[2],0,1).float()#.cuda()
 
 
-        grn_pred_edge,z = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
-        batch_targ_pos = batch[0][3]#.cuda()  
+        grn_pred_edge = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
+        batch_targ_pos = batch[3].squeeze(0)#.cuda()
         
         #loss = (self.loss_fn(grn_pred_edge.float(),batch_tar_mat.view(-1))+EPS).mean()
         loss,neg_edge = self.loss_fn(grn_pred_edge,batch_targ_pos)
@@ -322,19 +310,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         parser.add_argument('--encoder_layers',type=int,default=ENCODE_LAYERS)
         parser.add_argument('--edge_dim',type=int,default=EDGE_DIM)
         return parser
-def load_pretrained_model_from_checkpoint(checkpoint_path, model_class):
-    model = model_class(embed_dim=NODES_DIM,nhead=4,num_layers=2)  # Initialize your model class
-    checkpoint = torch.load(checkpoint_path)  # Load checkpoint
-    state_dict = checkpoint['state_dict']
 
-    # Remove the 'embed.' prefix from the state_dict keys
-    new_state_dict = {}
-    for key in state_dict:
-        new_key = key.replace('embed.', '')  # Replace 'embed.' with an empty string
-        new_state_dict[new_key] = state_dict[key]
-    model.load_state_dict(new_state_dict)  # Load state_dict from checkpoint
-    model.eval()  # Set to evaluation mode to freeze parameters
-    return model
 def train_GRNFormerLinkPred():
     pl.seed_everything(123)
     parser = ArgumentParser()
@@ -368,52 +344,29 @@ def train_GRNFormerLinkPred():
     args.enable_model_summary = True
     args.weights_summary = "full"
     os.makedirs(DATASET_DIR+"/"+args.save_dir, exist_ok=True)
-    root = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep',
-          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E',
-          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM']
-    gene_expression_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESCChipsec-ExpressionData.csv']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/ExpressionData.csv',
-                          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/ExpressionData.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/ExpressionData.csv',
-                          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv']
-    tfhum_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/TFHumans.csv",header=None)[0].to_list()
-    #tfmou_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/mESC/TFMouse.csv")['TF'].to_list()
-    TF_list = [tfhum_genes]#,tfhum_genes,tfmou_genes,tfmou_genes,tfmou_genes]
+    root = 'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep'
+    gene_expression_file = 'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/Filtered--ExpressionData.csv'
+    tf_genes = pd.read_csv("C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/TFHumans.csv",header=None)[0].to_list()
     # replace with actual TF gene names
-    regulation_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESCChipsec-network1.csv']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/hHep_combined.csv',
-                      # '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/mDC_combined.csv', '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv',
-                       # '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv']
-    #split_ind = ["Data/sc-RNA-seq/hESC/dataset_splits_combined.pt"]#,"/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/dataset_splits_combined.pt",
-               # "/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/dataset_splits_combined.pt" ,"/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt",
-               # "/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"]
-   
-    All_test_dataset=[]
-    for i in range(len(root)):
-
-        dataset = dt.GeneExpressionDataset(root[i],gene_expression_file[i],TF_list[i],regulation_file[i])
-
-   
-        #split_indices = torch.load(split_ind[i],weights_only=True)
-
-        #test_indices = split_indices['test_indices']
-
-
-        #test_dataset = torch.utils.data.Subset(dataset, test_indices)
-
-        All_test_dataset.append(dataset)
-
-    TestDatasets = ConcatDataset(All_test_dataset)
+    regulation_file = 'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/Filtered--network1.csv'
+    
+    dataset = dt.GeneExpressionDataset(root,gene_expression_file,tf_genes,regulation_file)
   
-    test_loader = DataListLoader(dataset=TestDatasets, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
-    #test_loader = DataLoader(dataset=dataset_test, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
+    #print(len(dataset))
+    #train_size = int(0.71 * len(dataset))
+    #val_size = int(0.1 * len(dataset))
+    #test_size = len(dataset) - (train_size+val_size)
+    #dataset_train,dataset_valid,dataset_test = torch.utils.data.random_split(dataset, [train_size, val_size,test_size])
+    
+    #dataset_valid = MicrographDataValid(DATASET_DIR)
+    #test_loader = torch.load(DATASET_DIR+'/test.pt') # using validation data for testing here
+    #train_loader = DataLoader(dataset=dataset_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=args.num_dataloader_workers)
+    #print(train_size)
+    #valid_loader = DataLoader(dataset=dataset_valid, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
+    test_loader = DataLoader(dataset=dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
+    print(len(test_loader))
     #torch.save(test_loader,DATASET_DIR+'/test.pt')
-    #emb = TransformerAutoencoder(embed_dim=NODES_DIM,nhead=4,num_layers=2)
-    checkpoint_path = "./Embedding_hep_esc_mdc_mhscEgm/GRNFormer_beeline_epoch=01_valid_loss=0.000531.ckpt"
-    pretrained_model = load_pretrained_model_from_checkpoint(checkpoint_path, TransformerAutoencoder)
-    embedding_model = PretrainedEmbeddingModel(pretrained_model)
-    model = GRNFormerLinkPred(codoformer=embedding_model,learning_rate=1e-3)
-    #test_loader = DataLoader(dataset=dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
-   # print(len(test_loader))
-    #torch.save(test_loader,DATASET_DIR+'/test.pt')
-    #model = GRNFormerLinkPred(learning_rate=1e-4)
+    model = GRNFormerLinkPred(learning_rate=1e-4)
     print("Model loaded")
     trainer = pl.Trainer.from_argparse_args(args)
     #checkpoint_callback = ModelCheckpoint(monitor='valid_loss', save_top_k=10, dirpath=DATASET_DIR+"/"+args.save_dir, filename='GRNFormer_beeline_{epoch:02d}_{valid_loss:6f}')
@@ -423,7 +376,7 @@ def train_GRNFormerLinkPred():
     logger = WandbLogger(project=args.project_name, entity=args.entity_name, name=args.save_dir, offline=False, save_dir=".")
     trainer.logger = logger
     #trainer.fit(model, train_loader, valid_loader,ckpt_path="/home/aghktb/GRNformer/GRNFormer_TFCENTER_NegEdges_withdecode_v2_resume/GRNFormer_beeline_epoch=52_valid_loss=0.587835.ckpt")
-    trainer.test(model,dataloaders=test_loader, ckpt_path='./GRNFormerWithPretrainedcodoformer_head8_v2/GRNFormer_beeline_epoch=13_valid_loss=0.689444.ckpt')
+    trainer.test(model,dataloaders=test_loader, ckpt_path='GRNFormer_TFCENTER_NegEdges_withdecode_v2_resume_52/GRNFormer_beeline_epoch=77_valid_loss=0.584404.ckpt')
    
 
 

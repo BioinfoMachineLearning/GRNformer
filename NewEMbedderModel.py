@@ -41,13 +41,13 @@ class TransformerAutoencoder(nn.Module):
         latent1 =  torch.mean(latent, dim=-1, keepdim=True) 
         #print(latent1.shape)
         # 2. Decoder
-        decoded = latent  # Add channel dimension back
-        decoded = self.deconv2d(decoded)  # Apply Transposed Conv2d, project embed_dim back to original feature dimension n
-        decoded =  torch.mean(decoded, dim=1, keepdim=True)
-        decoded = decoded.permute(1,0,2)
+        #decoded = latent  # Add channel dimension back
+        #decoded = self.deconv2d(decoded)  # Apply Transposed Conv2d, project embed_dim back to original feature dimension n
+        #decoded =  torch.mean(decoded, dim=1, keepdim=True)
+        #decoded = decoded.permute(1,0,2)
            # Shape: [batch_size, m, n]
         #print(decoded.shape)
-        return decoded, latent1.permute(2, 0, 1)  # Return reconstructed output and latent space
+        return  latent1.permute(2, 0, 1)  # Return reconstructed output and latent space
 
 
 

@@ -199,13 +199,12 @@ class GRNFormerLinkPred(pl.LightningModule):
                'monitor':metric_to_track}
     
     def training_step(self,batch,batch_idx):
-        batch_exp_data = batch[0].float().cuda()
+        batch_exp_data = batch[0][0].unsqueeze(0).float().cuda()
         
-        batch_bert_data = batch[0].cuda()
-        
-        batch_edges = batch[1].squeeze(0).cuda()
-        batch_edge_attr =torch.transpose(batch[2],0,1).float().cuda()
-
+        batch_bert_data = batch[0][0].cuda()
+        #print(batch_bert_data.shape)
+        batch_edges = batch[0][1].squeeze(0).cuda()
+        batch_edge_attr =torch.transpose(batch[0][2],0,1).float().cuda()
 
         grn_pred_edge,z = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
         #print(grn_pred_edge.shape)
@@ -227,11 +226,12 @@ class GRNFormerLinkPred(pl.LightningModule):
         return loss
     
     def validation_step(self,batch,batch_idx):
-        batch_exp_data = batch[0].float().cuda()
-        batch_bert_data = batch[0].cuda()
+        batch_exp_data = batch[0][0].unsqueeze(0).float().cuda()
+        
+        batch_bert_data = batch[0][0].cuda()
         #print(batch_bert_data.shape)
-        batch_edges = batch[1].squeeze(0).cuda()
-        batch_edge_attr =torch.transpose(batch[2],0,1).float().cuda()
+        batch_edges = batch[0][1].squeeze(0).cuda()
+        batch_edge_attr =torch.transpose(batch[0][2],0,1).float().cuda()
         #print(batch_edge_attr)
         
         #batch_targ_pos = batch[3].squeeze(0).cuda()
@@ -251,11 +251,12 @@ class GRNFormerLinkPred(pl.LightningModule):
        
     
     def test_step(self,batch, batch_idx):
-        batch_exp_data = batch[0].float().cuda()
-        batch_bert_data = batch[0].cuda()
+        batch_exp_data = batch[0][0].unsqueeze(0).float().cuda()
         
-        batch_edges = batch[1].squeeze(0).cuda()
-        batch_edge_attr =torch.transpose(batch[2],0,1).float().cuda()
+        batch_bert_data = batch[0][0].cuda()
+        #print(batch_bert_data.shape)
+        batch_edges = batch[0][1].squeeze(0).cuda()
+        batch_edge_attr =torch.transpose(batch[0][2],0,1).float().cuda()
 
 
         grn_pred_edge,z = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
@@ -319,22 +320,22 @@ def train_GRNFormerLinkPred():
     args.enable_model_summary = True
     args.weights_summary = "full"
     os.makedirs(DATASET_DIR+"/"+args.save_dir, exist_ok=True)
-    root = ['C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC','C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep',
-            'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mDC','C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-E',
-            'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-GM']
-    gene_expression_file = ['C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC/ExpressionData.csv','C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/ExpressionData.csv',
-                            'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mDC/ExpressionData.csv','C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-E/ExpressionData.csv',
-                            'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv']
-    tfhum_genes = pd.read_csv("C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC/TFHumans.csv",header=None)[0].to_list()
-    tfmou_genes = pd.read_csv("C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mDC/TFMouse.csv")['TF'].to_list()
+    root = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC','/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep',
+            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E',
+            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM']
+    gene_expression_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/ExpressionData.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/ExpressionData.csv',
+                            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/ExpressionData.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/ExpressionData.csv',
+                            '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv']
+    tfhum_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/TFHumans.csv",header=None)[0].to_list()
+    tfmou_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/TFMouse.csv")['TF'].to_list()
     TF_list = [tfhum_genes,tfhum_genes,tfmou_genes,tfmou_genes,tfmou_genes]
     # replace with actual TF gene names
-    regulation_file = ['C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC/hESC_combined.csv','C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/hHep_combined.csv',
-                       'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mDC/mDC_combined.csv', 'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv',
-                        'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv']
-    split_ind = ["C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC/dataset_splits_combined.pt","C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/dataset_splits_combined.pt",
-                "C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mDC/dataset_splits_combined.pt" ,"C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt",
-                "C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"]
+    regulation_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESC_combined.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/hHep_combined.csv',
+                       '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/mDC_combined.csv', '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv',
+                        '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv']
+    split_ind = ["/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/dataset_splits_combined.pt","/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/dataset_splits_combined.pt",
+                "/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/dataset_splits_combined.pt" ,"/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt",
+                "/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"]
     All_train_dataset=[]
     All_valid_dataset=[]
     All_test_dataset=[]

@@ -5,3 +5,5 @@ wandb/
 *.pt
 *.log
 BEELINE-*
+Data_2/
+*.pyc

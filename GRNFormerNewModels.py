@@ -63,10 +63,10 @@ class TransformerDecoder_tcn(nn.Module):
             self.conv_layers.append(GRNFormerLayerBlock(in_channels=(i - 1) * out_channels, out_channels=i * out_channels, heads=num_head, edge_dim=num_head, beta=True, dropout=0.5))
 
         self.fc1 = nn.Linear(i*out_channels, out_channels)
-        self.fc2 = nn.Linear(out_channels, latent_dim)
+        #self.fc2 = nn.Linear(out_channels, latent_dim)
 
         self.norm = BatchNorm(out_channels*i)
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.1)
 
     def forward(self, z, edge_index, edge_attr):
         z = z.float()
@@ -77,14 +77,14 @@ class TransformerDecoder_tcn(nn.Module):
             z, edge_index1 = decoder_layer(z, edge_index1[0], edge_index1[1])
         edge_ind = edge_index1[0]
         #edge_att1 = torch.mean(edge_index1[1], dim=1)
-        z = self.norm(z)
+        #z = self.norm(z)
         z = self.dropout(z)
 
         z = self.fc1(z)
         z = torch.relu(z)
-        z = self.fc2(z)
+        #z = self.fc2(z)
 
-        return z, edge_ind
+        return z, edge_ind,edge_index1[1]
 
 class EdgePredictor(nn.Module):
     def __init__(self, latent_dim):
@@ -106,20 +106,22 @@ class EdgePredictor(nn.Module):
 
         # Fill in the specified edge probabilities
         full_edge_probs[row, col] = specified_edge_probs.squeeze(1)
-        '''
+        
         # Predict probabilities for all pairs of nodes
         row, col = torch.meshgrid(torch.arange(num_nodes, device=z.device), torch.arange(num_nodes, device=z.device), indexing='ij')
         all_edge_features = torch.cat([z[row].view(-1, z.size(1)), z[col].view(-1, z.size(1))], dim=1)
         all_edge_probs = (self.fc(all_edge_features)).view(num_nodes, num_nodes)
 
         # Combine specified edge probabilities with all edge probabilities
-        full_edge_probs = torch.where(full_edge_probs == 0, all_edge_probs, full_edge_probs)
-        '''
-        adj = to_dense_adj(edge_index=edge_index, edge_attr=edge_attr,max_num_nodes=num_nodes)
-        adj = adj.sum(dim=3)
-        adj = adj+full_edge_probs
-        
-        return adj.squeeze(0)
+        #full_edge_probs = torch.where(full_edge_probs == 0, all_edge_probs, full_edge_probs)
+        #print(full_edge_probs)
+        #adj = to_dense_adj(edge_index=edge_index, edge_attr=edge_attr,max_num_nodes=num_nodes)
+        #print(adj)
+        #adj = adj.sum(dim=3)
+        #print(adj.shape)
+        adj = all_edge_probs+full_edge_probs
+        #print(adj)
+        return torch.sigmoid(adj.squeeze(0))
     
 class Reconstruct(torch.nn.Module):
     r"""The inner product decoder from the `"Variational Graph Auto-Encoders"
@@ -142,8 +144,8 @@ class Reconstruct(torch.nn.Module):
                 (default: :obj:`True`)
         """
         value = (z[edge_index[0]] * z[edge_index[1]]).sum(dim=1)
-        return torch.sigmoid(value) if sigmoid else value
-        #return value
+        #return torch.sigmoid(value) if sigmoid else value
+        return value
 class GAE(torch.nn.Module):
     r"""The Graph Auto-Encoder model from the
     `"Variational Graph Auto-Encoders" <https://arxiv.org/abs/1611.07308>`_
@@ -256,10 +258,10 @@ class VGAE(GAE):
 
     def encode(self, *args, **kwargs) -> Tensor:
         """"""
-        self.__mu__, self.__logstd__,edge_ind,_ = self.encoder(*args, **kwargs)
+        self.__mu__, self.__logstd__,edge_ind,edge_attr = self.encoder(*args, **kwargs)
         self.__logstd__ = self.__logstd__.clamp(max=MAX_LOGSTD)
         z = self.reparametrize(self.__mu__, self.__logstd__)
-        return z,edge_ind
+        return z,edge_ind,self.__mu__,self.__logstd__
 
     def kl_loss(self, mu: Optional[Tensor] = None,
                 logstd: Optional[Tensor] = None) -> Tensor:

@@ -32,7 +32,7 @@ class GeneExpressionDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self):
-        return ['data.pt']
+        return ['TF500.pt']
 
     def download(self):
         pass
@@ -65,7 +65,25 @@ class GeneExpressionDataset(InMemoryDataset):
 
 
               # Return the data object.
-            return data    
+            return data   
+    def min_max(self,tensor):
+        # Compute the min and max values for each row
+        row_min, _ = torch.min(tensor, dim=1, keepdim=True)
+        row_max, _ = torch.max(tensor, dim=1, keepdim=True)
+        print(row_max.shape)
+        # Compute the range, avoid division by zero by replacing 0 with 1 in the range
+        row_range = torch.where(row_max != row_min, row_max - row_min, torch.ones_like(row_max))
+
+        # Apply Min-Max normalization
+        normalized_tensor = (tensor - row_min) / row_range
+
+        return normalized_tensor
+    def min_max_dim0(self,exp_mat):
+        max_n,_ = torch.max(exp_mat,dim=0)
+
+        min_n,_ = torch.min(exp_mat,dim=0)
+        exp_mat = (exp_mat - min_n ) / (max_n - min_n)
+        return exp_mat.T 
     def process(self):
         
         self.data_list = []
@@ -101,7 +119,21 @@ class GeneExpressionDataset(InMemoryDataset):
         print(Is_tf.sum())
         #print(regulation_matrix.loc["CEBPB",tf_gene],gene_indices["CEBPB"])
         print(regulation_matrix.shape)
+        regulation_edge_index, regulation_edge_weight = dense_to_sparse(torch.tensor(regulation_matrix))
+        
+        #label_graph = Data(edge_index=regulation_edge_index, edge_weight=regulation_edge_weight)
+                #print(label_graph)
+                # Assign the label graph to the subgraph's y attribute
+        
+        #print(regulation_matrix.loc["CEBPB",tf_gene],gene_indices["CEBPB"])
+        print(regulation_matrix.shape)
+        minm_x = self.min_max(full_graph.x)
+        
+        fullgraph_x = torch.column_stack((minm_x,Is_tf))
+        full_graph.x = fullgraph_x
+        full_graph.y = regulation_edge_index
         # Step 2: Sample subgraphs
+        '''
         for tf_gene in self.tf_genes:
             if tf_gene in gene_indices:
                 tf_idx = gene_indices[tf_gene]
@@ -178,7 +210,8 @@ class GeneExpressionDataset(InMemoryDataset):
                 subgraph_data.y = label_graph.edge_index
                 
                 self.data_list.append(subgraph_data)
-
+            '''
+        self.data_list.append(full_graph)
         # Step 4: Save the processed data
         #data, slices = self.collate(data_list)
         torch.save(self.data_list, self.processed_paths[0])
@@ -199,17 +232,19 @@ class GeneExpressionDataset(InMemoryDataset):
         #item = next(GCENdataset)
         return [data,edges,edge_weights, pos_edges]
 # Usage
-root = '/home/aghktb/GRN/GRNformer/Data/sc-RNA-seq/hHep'
-gene_expression_file = '/home/aghktb/GRN/GRNformer/Data/sc-RNA-seq/hHep/ExpressionData.csv'
-tf_genes = pd.read_csv("/home/aghktb/GRN/GRNformer/Data/sc-RNA-seq/hHep/TFHumans.csv",header=None)[0].to_list()
+'''
+root = 'Data/sc-RNA-seq/mESC'
+gene_expression_file = 'Data/sc-RNA-seq/mESC/mESCChipseq_Tf500-ExpressionData.csv'
+tfmou_genes = pd.read_csv("Data/sc-RNA-seq/mESC/TFMouse.csv")['TF'].to_list()
 # replace with actual TF gene names
-regulation_file = '/home/aghktb/GRN/GRNformer/Data/sc-RNA-seq/hHep/HepG2-ChIP-seq-network.csv'
+regulation_file = 'Data/sc-RNA-seq/mESC/mESCChipseq_Tf500-network1.csv'
 
 #dataset = torch.load("../Data/sc-RNA-seq/hHep/processed/data.pt")
-dataset = GeneExpressionDataset(root,gene_expression_file,tf_genes,regulation_file)
+dataset = GeneExpressionDataset(root,gene_expression_file,tfmou_genes,regulation_file)
 data_load =  DataLoader(dataset=dataset, batch_size=1, shuffle=True, num_workers=1)
 
 # Iterate through the DataLoader to access individual data points
 #print(len(data_load))
 for data in data_load:
     print(data[0].shape)
+    '''

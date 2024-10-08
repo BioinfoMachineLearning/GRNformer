@@ -27,7 +27,9 @@ class GRNFormerLayerBlock(TransformerConv):
         
         out, attention_weights = self.transformer_conv(x, edge_index, edge_attr,return_attention_weights=True)
         out = self.transf1(out)
+        out = self.gelu(out)
         #out = self.b1(out)
+        out = self.dropout(out)
         return out, attention_weights
     
 
