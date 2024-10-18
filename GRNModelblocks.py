@@ -19,7 +19,7 @@ class GRNFormerLayerBlock(TransformerConv):
         self.transf1 = Linear(out_channels*heads,out_channels)
         self.b1 = BatchNorm(out_channels)
         self.gelu = nn.ReLU()
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.1)
         
 
     def forward(self, x, edge_index, edge_attr):

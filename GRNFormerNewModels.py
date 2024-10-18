@@ -89,7 +89,7 @@ class TransformerDecoder_tcn(nn.Module):
 class EdgePredictor(nn.Module):
     def __init__(self, latent_dim):
         super().__init__()
-        self.fc = nn.Linear(2 * latent_dim, 1)
+        self.fc = nn.Linear( latent_dim, 1)
 
     
     
@@ -98,20 +98,21 @@ class EdgePredictor(nn.Module):
         # Predict edge probabilities for specified edges
         
         row, col = edge_index
-        edge_features = torch.cat([z[row], z[col]], dim=1)
-        specified_edge_probs = (self.fc(edge_features))
-        
+        #edge_features = torch.cat([z[row], z[col]], dim=1)
+        edge_features = torch.mean(edge_attr,dim=1)
+        #specified_edge_probs = (self.fc(edge_features))
+        #specified_edge_probs = 
         # Initialize full adjacency matrix with zeros
         full_edge_probs = torch.zeros((num_nodes, num_nodes), device=z.device)
 
         # Fill in the specified edge probabilities
-        full_edge_probs[row, col] = specified_edge_probs.squeeze(1)
+        full_edge_probs[row, col] = edge_features
         
         # Predict probabilities for all pairs of nodes
         row, col = torch.meshgrid(torch.arange(num_nodes, device=z.device), torch.arange(num_nodes, device=z.device), indexing='ij')
-        all_edge_features = torch.cat([z[row].view(-1, z.size(1)), z[col].view(-1, z.size(1))], dim=1)
-        all_edge_probs = (self.fc(all_edge_features)).view(num_nodes, num_nodes)
-
+        #all_edge_features = torch.cat([z[row].view(-1, z.size(1)), z[col].view(-1, z.size(1))], dim=1)
+        #all_edge_probs = (self.fc(all_edge_features)).view(num_nodes, num_nodes)
+        all_edge_probs =  torch.matmul(z, z.t())
         # Combine specified edge probabilities with all edge probabilities
         #full_edge_probs = torch.where(full_edge_probs == 0, all_edge_probs, full_edge_probs)
         #print(full_edge_probs)
@@ -143,7 +144,7 @@ class Reconstruct(torch.nn.Module):
                 the logistic sigmoid function to the output.
                 (default: :obj:`True`)
         """
-        value = (z[edge_index[0]] * z[edge_index[1]]).sum(dim=1)
+        value = (z[edge_index[0],edge_index[1]])
         #return torch.sigmoid(value) if sigmoid else value
         return value
 class GAE(torch.nn.Module):

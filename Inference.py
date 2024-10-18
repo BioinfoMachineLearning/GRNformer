@@ -32,15 +32,18 @@ from torchmetrics.classification import BinaryAUROC,BinaryAveragePrecision,Binar
 from torch_geometric.utils import negative_sampling
 import DatasetMaker.DatasetwithTFcenter as dt
 from GRNFormerNewModels import EdgeTransformerEncoder_tcn,TransformerDecoder_tcn,EdgePredictor,VGAE,Reconstruct
-from NewEMbedderModel import TransformerAutoencoder
+from Scripts.GeneTranscoder.NewEMbedderModel import TransformerAutoencoder
 from argparse import ArgumentParser
 from torch_geometric.utils import to_dense_adj
 from typing import Optional, Tuple
 from torch_geometric.loader import DataListLoader
 from sklearn.decomposition import PCA
+from dotenv import load_dotenv
+
+load_dotenv()
 AVAIL_GPUS = [0]
 NUM_NODES = 1
-BATCH_SIZE = 1
+BATCH_SIZE = 8
 DATALOADERS = 1
 ACCELERATOR = "gpu"
 EPOCHS = 100
@@ -48,10 +51,10 @@ NODES_DIM = 64
 EXP_CHANNEL=426
 BERT_CHANNEL=426
 EDGE_DIM = 1
-NUM_HEADS = 8
-ENCODE_LAYERS = 6
+NUM_HEADS = 4
+ENCODE_LAYERS = 3
 OUT_CH=16
-DATASET_DIR = "./"
+DATASET_DIR = os.path.abspath("./")
 
 EPS = 1e-15
 
@@ -83,13 +86,14 @@ class PretrainedEmbeddingModel(nn.Module):
         return embeddings
 
 class GRNFormerLinkPred(pl.LightningModule):
-    def __init__(self, codoformer,learning_rate=1e-4,node_dim=NODES_DIM,out_chan=OUT_CH,num_heads=NUM_HEADS,edge_dim=EDGE_DIM,encoder_layers=ENCODE_LAYERS, **model_kwargs):
+    def __init__(self,learning_rate=1e-4,node_dim=NODES_DIM,out_chan=OUT_CH,num_heads=NUM_HEADS,edge_dim=EDGE_DIM,encoder_layers=ENCODE_LAYERS, **model_kwargs):
         super().__init__()
         
         self.save_hyperparameters()
         #self.model = VGAE(VariationalGCNEncoder(node_dim, out_chan))
-        self.embed =  codoformer
-        self.model = VGAE(encoder=EdgeTransformerEncoder_tcn(node_dim, out_chan,num_head=num_heads,edge_dim=edge_dim,num_layers=encoder_layers),decoder=TransformerDecoder_tcn(latent_dim=out_chan,out_channels=node_dim,num_head=num_heads,num_layers=encoder_layers,edge_dim=edge_dim))
+        #self.embed =  codoformer
+        self.embed = TransformerAutoencoder(embed_dim=NODES_DIM,nhead=4,num_layers=1)
+        self.model = VGAE(encoder=EdgeTransformerEncoder_tcn(node_dim, out_chan,num_head=num_heads,edge_dim=edge_dim,num_layers=encoder_layers),decoder=TransformerDecoder_tcn(latent_dim=out_chan,out_channels=out_chan,num_head=num_heads,num_layers=encoder_layers,edge_dim=edge_dim))
         self.edgepred = EdgePredictor(latent_dim=out_chan)
         self.reconstruct = Reconstruct()
         self.criterian = nn.BCELoss()
@@ -107,18 +111,16 @@ class GRNFormerLinkPred(pl.LightningModule):
     def forward(self, exp_data,bert_data,edge_sampled,edge_attr):
 
         z = self.embed(exp_data)
-        print(z.shape)
+        #print(z.shape)
         x = z.squeeze()
-        edge_attr = edge_attr.unsqueeze(1)
-        print(edge_attr.shape)
-        grnnodes_lat, grnedges_lat= self.model.encode(x,edge_sampled,edge_attr)
-        #z,grn_edges = self.model.decode(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
-        #print(z.shape,grn_edges.shape)
-        edge_prob =self.edgepred(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
+        grnnodes_lat, grnedges_lat,mu,logstd= self.model.encode(x,edge_sampled,edge_attr)
+        grnnodes_lat,grn_edges,grn_edge_att = self.model.decode(grnnodes_lat,grnedges_lat[0],grnedges_lat[1])
+        print(grnedges_lat[0],grn_edges)
+        edge_prob =self.edgepred(grnnodes_lat,grn_edges,grn_edge_att)
         #print(edge_prob.shape)
-        return edge_prob,z
+        return edge_prob,z,mu,logstd
     
-    def recon_loss(self, z: Tensor, pos_edge_index: Tensor,
+    def recon_loss(self, z: Tensor,emb:Tensor, pos_edge_index: Tensor,
                    neg_edge_index: Optional[Tensor]=None) -> Tensor:
         r"""Given latent variables :obj:`z`, computes the binary cross
         entropy loss for positive edges :obj:`pos_edge_index` and negative
@@ -138,6 +140,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         pos_y = z.new_ones(pos_edge_index.size(1))
         neg_y = z.new_zeros(neg_edge_index.size(1))
         y = torch.cat([pos_y, neg_y], dim=0)
+        print(z.shape,pos_edge_index)
         pos_pred = self.reconstruct(z, pos_edge_index,sigmoid=True)
         neg_pred = self.reconstruct(z, neg_edge_index,sigmoid=True)
         pred = torch.cat([pos_pred, neg_pred], dim=0)
@@ -149,7 +152,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         #y_flat = y.view(-1)
         ##print(pred.shape,y.shape,y_flat.shape)
         loss = self.criterian(pred,y)
-        klloss = self.kl()
+        #klloss = self.kl()
         #pos_loss = -torch.log(
         #    self.model.decoder(z, pos_edge_index) + EPS).mean()
 
@@ -158,7 +161,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         ##                      self.model.decoder(z, neg_edge_index) +
         #                      EPS).mean()
 
-        return loss+klloss,neg_edge_index
+        return loss,neg_edge_index
     
     def test(self, z: Tensor, pos_edge_index: Tensor,
              neg_edge_index: Optional[Tensor]=None,prefix=None) -> Tuple[Tensor, Tensor]:
@@ -200,7 +203,7 @@ class GRNFormerLinkPred(pl.LightningModule):
         elif prefix=="test":
             metrics = self.test_metrics_1(preds,y_flat.int())
             conf_mat = BinaryConfusionMatrix(threshold=0.5)
-            conf_vals = conf_mat(preds,y)
+            conf_vals = conf_mat(preds.detach().cpu(),y.detach().cpu())
             return metrics,conf_vals,pos_pred
         else:
             metrics = self.metrics(preds,y_flat.int())
@@ -274,19 +277,22 @@ class GRNFormerLinkPred(pl.LightningModule):
         #print(batch[0].shape)
         #red_data = self.reduce_dimensionality_with_pca(batch[0].squeeze())
         #print(red_data.shape,red_data.dtype)
-        batch_exp_data = batch[0][0].unsqueeze(0).float()#.cuda()
+        batch_exp_data = batch[0][0].unsqueeze(0).float().cuda()
         
-        batch_bert_data = batch[0][0]#.cuda()
+        batch_bert_data = batch[0][0].cuda()
         #print(batch_bert_data.shape)
-        batch_edges = batch[0][1].squeeze(0)#.cuda()
-        batch_edge_attr =batch[0][2].float()#.cuda()
+        batch_edges = batch[0][1].squeeze(0).cuda()
+        batch_edge_attr = torch.transpose(batch[0][2].unsqueeze(0),0,1).float().cuda()
 
 
-        grn_pred_edge,z = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
-        batch_targ_pos = batch[0][3]#.cuda()  
+        grn_pred_edge,z,mu,logstd  = self.forward(batch_exp_data,batch_bert_data,batch_edges,batch_edge_attr)
+        batch_targ_pos = batch[0][3].cuda()  
         
         #loss = (self.loss_fn(grn_pred_edge.float(),batch_tar_mat.view(-1))+EPS).mean()
-        loss,neg_edge = self.loss_fn(grn_pred_edge,batch_targ_pos)
+        loss,neg_edge = self.loss_fn(grn_pred_edge,z,batch_targ_pos)
+        
+        klloss = self.kl(mu,logstd)*1/len(z)
+        loss=loss+klloss
         #loss = loss_pos.mean()+loss_neg.mean()
         #loss = loss + (1 / len(batch_exp_data)) * self.kl()
         #loss = loss + (1 / len(batch_data)) * self.kl()
@@ -309,8 +315,8 @@ class GRNFormerLinkPred(pl.LightningModule):
         
         #for i  in range(len(outputs)):
             dataset_outputs = outputs
-            torch.save(dataset_outputs,"GRN_Predictions_hHepChipseq1.pt")
-            #genes = pd.read_csv('C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/Filtered--ExpressionData.csv',index_col=0).index
+            torch.save(dataset_outputs,DATASET_DIR+"/GRN_Predictions.pt")
+            #genes = pd.read_csv('C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hHep/Filtered--ExpressionData.csv'),index_col=0).index
 
 
 
@@ -340,7 +346,7 @@ def train_GRNFormerLinkPred():
     parser = ArgumentParser()
     parser = pl.Trainer.add_argparse_args(parser)
     parser = GRNFormerLinkPred.add_model_specific_args(parser)
-    parser.add_argument('--num_gpus', type=int, default=AVAIL_GPUS,
+    parser.add_argument('--num_gpus', type=int, default=-1,
                         help="Number of GPUs to use (e.g. -1 = all available GPUs)")
     parser.add_argument('--nodes', type=int, default=NUM_NODES, help="Number of nodes to use")
     parser.add_argument('--num_epochs', type=int, default=EPOCHS, help="Number of epochs")
@@ -358,9 +364,9 @@ def train_GRNFormerLinkPred():
                              "Enter True or num of batch you want to send, " "eg. 1 or 7")
     args = parser.parse_args()
     
-    #args.devices = args.num_gpus
+    args.devices = args.num_gpus
     args.num_nodes = args.nodes
-    #args.accelerator = ACCELERATOR
+    args.accelerator = ACCELERATOR
     args.max_epochs = args.num_epochs
     args.fast_dev_run = args.unit_test
     args.log_every_n_steps = 1
@@ -368,22 +374,22 @@ def train_GRNFormerLinkPred():
     args.enable_model_summary = True
     args.weights_summary = "full"
     os.makedirs(DATASET_DIR+"/"+args.save_dir, exist_ok=True)
-    root = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep',
-          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E',
-          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM']
-    gene_expression_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESCChipsec-ExpressionData.csv']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/ExpressionData.csv',
-                          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/ExpressionData.csv','/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/ExpressionData.csv',
-                          #  '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv']
-    tfhum_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/TFHumans.csv",header=None)[0].to_list()
-    #tfmou_genes = pd.read_csv("/home/aghktb/GRNformer/Data/sc-RNA-seq/mESC/TFMouse.csv")['TF'].to_list()
+    root = [os.path.abspath('Data/sc-RNA-seq/hESC')]#,os.path.abspath('Data/sc-RNA-seq/hHep'),
+          #  os.path.abspath('Data/sc-RNA-seq/mDC'),os.path.abspath('Data/sc-RNA-seq/mHSC-E'),
+          #  os.path.abspath('Data/sc-RNA-seq/mHSC-GM')]
+    gene_expression_file = [os.path.abspath('Data/sc-RNA-seq/hESC/Nonspecific_hESC_TF500-ExpressionData.csv')]#,os.path.abspath('Data/sc-RNA-seq/hHep/ExpressionData.csv'),
+                          #  os.path.abspath('Data/sc-RNA-seq/mDC/ExpressionData.csv'),os.path.abspath('Data/sc-RNA-seq/mHSC-E/ExpressionData.csv'),
+                          #  os.path.abspath('Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv')]
+    tfhum_genes = pd.read_csv(os.path.abspath("Data/sc-RNA-seq/hESC/TFHumans.csv"),header=None)[0].to_list()
+    #tfmou_genes = pd.read_csv(os.path.abspath("/Data/sc-RNA-seq/mESC/TFMouse.csv")['TF'].to_list()
     TF_list = [tfhum_genes]#,tfhum_genes,tfmou_genes,tfmou_genes,tfmou_genes]
     # replace with actual TF gene names
-    regulation_file = ['/home/aghktb/GRNformer/Data/sc-RNA-seq/hESC/hESCChipsec-network1.csv']#,'/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/hHep_combined.csv',
-                      # '/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/mDC_combined.csv', '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv',
-                       # '/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv']
-    #split_ind = ["Data/sc-RNA-seq/hESC/dataset_splits_combined.pt"]#,"/home/aghktb/GRNformer/Data/sc-RNA-seq/hHep/dataset_splits_combined.pt",
-               # "/home/aghktb/GRNformer/Data/sc-RNA-seq/mDC/dataset_splits_combined.pt" ,"/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt",
-               # "/home/aghktb/GRNformer/Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"]
+    regulation_file = [os.path.abspath('Data/sc-RNA-seq/hESC/Nonspecific_hESC_TF500-network1.csv')]#,os.path.abspath('Data/sc-RNA-seq/hHep/hHep_combined.csv'),
+                      # os.path.abspath('Data/sc-RNA-seq/mDC/mDC_combined.csv'), os.path.abspath('Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv'),
+                       # os.path.abspath('Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv'))]
+    #split_ind = ["Data/sc-RNA-seq/hESC/dataset_splits_combined.pt"]#,os.path.abspath("/Data/sc-RNA-seq/hHep/dataset_splits_combined.pt",
+               # os.path.abspath("/Data/sc-RNA-seq/mDC/dataset_splits_combined.pt" ,os.path.abspath("/Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt",
+               # os.path.abspath("/Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"]
    
     All_test_dataset=[]
     for i in range(len(root)):
@@ -406,10 +412,10 @@ def train_GRNFormerLinkPred():
     #test_loader = DataLoader(dataset=dataset_test, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
     #torch.save(test_loader,DATASET_DIR+'/test.pt')
     #emb = TransformerAutoencoder(embed_dim=NODES_DIM,nhead=4,num_layers=2)
-    checkpoint_path = "./Embedding_hep_esc_mdc_mhscEgm/GRNFormer_beeline_epoch=01_valid_loss=0.000531.ckpt"
-    pretrained_model = load_pretrained_model_from_checkpoint(checkpoint_path, TransformerAutoencoder)
-    embedding_model = PretrainedEmbeddingModel(pretrained_model)
-    model = GRNFormerLinkPred(codoformer=embedding_model,learning_rate=1e-3)
+    #checkpoint_path = "./Embedding_hep_esc_mdc_mhscEgm/GRNFormer_beeline_epoch=01_valid_loss=0.000531.ckpt"
+    #pretrained_model = load_pretrained_model_from_checkpoint(checkpoint_path, TransformerAutoencoder)
+    #embedding_model = PretrainedEmbeddingModel(pretrained_model)
+    model = GRNFormerLinkPred(learning_rate=1e-3)
     #test_loader = DataLoader(dataset=dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.num_dataloader_workers)
    # print(len(test_loader))
     #torch.save(test_loader,DATASET_DIR+'/test.pt')
@@ -422,11 +428,8 @@ def train_GRNFormerLinkPred():
    # trainer.callbacks = [checkpoint_callback, lr_monitor, early_stopping_callback]
     logger = WandbLogger(project=args.project_name, entity=args.entity_name, name=args.save_dir, offline=False, save_dir=".")
     trainer.logger = logger
-    #trainer.fit(model, train_loader, valid_loader,ckpt_path="/home/aghktb/GRNformer/GRNFormer_TFCENTER_NegEdges_withdecode_v2_resume/GRNFormer_beeline_epoch=52_valid_loss=0.587835.ckpt")
-    trainer.test(model,dataloaders=test_loader, ckpt_path='./GRNFormerWithPretrainedcodoformer_head8_v2/GRNFormer_beeline_epoch=13_valid_loss=0.689444.ckpt')
-   
-
-
+    #trainer.fit(model, train_loader, valid_loader,ckpt_path=os.path.abspath("/GRNFormer_TFCENTER_NegEdges_withdecode_v2_resume/GRNFormer_beeline_epoch=52_valid_loss=0.587835.ckpt")
+    trainer.test(model,dataloaders=test_loader, ckpt_path=os.path.abspath('Trainings/NoPretrain_WithDecoder_Lay3h4b8_randomNeg_Relu/GRNFormer_beeline_epoch=44_valid_loss=0.653925.ckpt'))
 
 if __name__ == "__main__":
     train_GRNFormerLinkPred()

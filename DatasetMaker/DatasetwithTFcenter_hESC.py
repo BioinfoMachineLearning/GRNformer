@@ -8,6 +8,7 @@ import networkx as nx
 from scipy.spatial.distance import pdist, squareform
 from torch_geometric.loader import NeighborSampler
 from torch.utils.data import DataLoader
+import os
 """
 class GeneExpressionDataset(Dataset):
     def __init__(self, root, transform=None, pre_transform=None):
@@ -298,15 +299,20 @@ class GeneExpressionDataset(InMemoryDataset):
             z_score = (exp_mat - mean_sam)/std_sam
 
             return z_score
-    def z_score_dim1(self,exp_mat):
-            exp_mat = exp_mat
+    def z_score_per_cell(self, exp_mat):
+        # exp_mat: n x m matrix (n = number of genes, m = number of cells)
 
-            mean_sam = torch.mean(exp_mat, axis = 0,keepdim=False)
-            std_sam = torch.std(exp_mat, axis = 0,keepdim=False)
-            #print(mean_sam.shape)
-            z_score = (exp_mat - mean_sam)/std_sam
+        # Calculate the mean of each column (cell)
+        mean_per_cell = torch.mean(exp_mat, axis=0, keepdim=False)  # shape: (m,)
 
-            return z_score
+        # Calculate the standard deviation of each column (cell)
+        std_per_cell = torch.std(exp_mat, axis=0, keepdim=False)    # shape: (m,)
+
+        # Avoid division by zero by adding a small constant to std
+        epsilon = 1e-8
+        z_score = (exp_mat - mean_per_cell) / (std_per_cell + epsilon)
+
+        return z_score
 
     
     def process(self):
@@ -354,9 +360,9 @@ class GeneExpressionDataset(InMemoryDataset):
                 
                 # Get 1-hop and 2-hop neighbors
                 num_hops = 1
-                while num_hops<500:
+                while num_hops<100:
                     subgraph_node_idx, subgraph_edge_index, _, _ = k_hop_subgraph(tf_idx, num_hops=num_hops, edge_index=full_graph.edge_index, num_nodes=num_genes)
-                    if len(subgraph_node_idx) >= 500:
+                    if len(subgraph_node_idx) >= 100:
                         break
                     print(num_hops,len(subgraph_node_idx))
                     num_hops += 1
@@ -373,10 +379,10 @@ class GeneExpressionDataset(InMemoryDataset):
                 second_hop_neighbors = subgraph_node_idx[~torch.isin(subgraph_node_idx,first_hop_neighbors) & (subgraph_node_idx != tf_idx)]
                 
                 # Combine TF, first hop, and second hop neighbors to get exactly 100 nodes
-                if len(first_hop_neighbors) + 1 >= 500:
-                    subgraph_node_idx = torch.cat([torch.tensor([tf_idx]), first_hop_neighbors[:499]])
+                if len(first_hop_neighbors) + 1 >= 100:
+                    subgraph_node_idx = torch.cat([torch.tensor([tf_idx]), first_hop_neighbors[:99]])
                 else:
-                    remaining_nodes = 500 - (len(first_hop_neighbors) + 1)
+                    remaining_nodes = 100 - (len(first_hop_neighbors) + 1)
                     subgraph_node_idx = torch.cat([torch.tensor([tf_idx]), first_hop_neighbors, second_hop_neighbors[:remaining_nodes]])
                 
                 subgraph_node_set = set(subgraph_node_idx.tolist())
@@ -397,9 +403,10 @@ class GeneExpressionDataset(InMemoryDataset):
                 ]
                 print(subgraph_edge_index)
                 exp_x = full_graph.x[subgraph_node_idx]
-                minm_x = self.min_max(exp_x)
-                
-                subgraph_x = torch.column_stack((minm_x,Is_tf[subgraph_node_idx]))
+                #minm_x = self.min_max(exp_x)
+                zscore = self.z_score_per_cell(exp_x)
+                print("zscore shape",zscore.shape)
+                subgraph_x = torch.column_stack((zscore,Is_tf[subgraph_node_idx]))
                 
                 #subgraph_x = full_graph.x[subgraph_node_idx]
                 
@@ -473,6 +480,47 @@ class GeneExpressionDataset(InMemoryDataset):
         return [data,edges,edge_weights, pos_edges]
 # Usage
 '''
+root = [os.path.abspath('Data/sc-RNA-seq/hESC'),os.path.abspath('Data/sc-RNA-seq/hHep'),
+            os.path.abspath('Data/sc-RNA-seq/mDC'),os.path.abspath('Data/sc-RNA-seq/mHSC-E'),
+            os.path.abspath('Data/sc-RNA-seq/mHSC-GM'),os.path.abspath('Data/sc-RNA-seq/mESC'),
+                            os.path.abspath('Data/sc-RNA-seq/mHSC-L')]
+
+gene_expression_file = [os.path.abspath('Data/sc-RNA-seq/hESC/ExpressionData.csv'),os.path.abspath('Data/sc-RNA-seq/hHep/ExpressionData.csv'),
+                            os.path.abspath('Data/sc-RNA-seq/mDC/ExpressionData.csv'),os.path.abspath('Data/sc-RNA-seq/mHSC-E/ExpressionData.csv'),
+                            os.path.abspath('Data/sc-RNA-seq/mHSC-GM/ExpressionData.csv'),os.path.abspath('Data/sc-RNA-seq/mESC/ExpressionData.csv'),
+                            os.path.abspath('Data/sc-RNA-seq/mHSC-L/ExpressionData.csv')]
+
+tfhum_genes = pd.read_csv(os.path.abspath("Data/sc-RNA-seq/hESC/TFHumans.csv"),header=None)[0].to_list()
+tfmou_genes = pd.read_csv(os.path.abspath("Data/sc-RNA-seq/mDC/TFMouse.csv"))['TF'].to_list()
+TF_list = [tfhum_genes,tfhum_genes,tfmou_genes,tfmou_genes,tfmou_genes,tfmou_genes,tfmou_genes]
+    # replace with actual TF gene names
+regulation_file = [os.path.abspath('Data/sc-RNA-seq/hESC/hESC_combined.csv'),os.path.abspath('Data/sc-RNA-seq/hHep/hHep_combined.csv'),
+                       os.path.abspath('Data/sc-RNA-seq/mDC/mDC_combined.csv'), os.path.abspath('Data/sc-RNA-seq/mHSC-E/mHSC-E_combined.csv'),
+                        os.path.abspath('Data/sc-RNA-seq/mHSC-GM/mHSC-GM_combined.csv'),os.path.abspath('Data/sc-RNA-seq/mESC/mESC_combined.csv'),
+                        os.path.abspath('Data/sc-RNA-seq/mHSC-L/mHSC-L_combined.csv')]
+split_ind = [os.path.abspath("Data/sc-RNA-seq/hESC/dataset_splits_combined.pt"),os.path.abspath("Data/sc-RNA-seq/hHep/dataset_splits_combined.pt"),
+                os.path.abspath("Data/sc-RNA-seq/mDC/dataset_splits_combined.pt") ,os.path.abspath("Data/sc-RNA-seq/mHSC-E/dataset_splits_combined.pt"),
+                os.path.abspath("Data/sc-RNA-seq/mHSC-GM/dataset_splits_combined.pt"),os.path.abspath("Data/sc-RNA-seq/mESC/dataset_splits_combined.pt"),
+                os.path.abspath("Data/sc-RNA-seq/mHSC-L/dataset_splits_combined.pt")]
+
+
+for i in range(0,len(root)):
+
+        dataset = GeneExpressionDataset(root[i],gene_expression_file[i],TF_list[i],regulation_file[i])
+
+        print(len(dataset))
+        train_size = int(0.70 * len(dataset))
+        val_size = int(0.1 * len(dataset))
+        test_size = len(dataset) - (train_size+val_size)
+        dataset_train,dataset_valid,dataset_test = torch.utils.data.random_split(dataset, [train_size, val_size,test_size])
+
+        train_indices = dataset_train.indices
+        valid_indices = dataset_valid.indices
+        test_indices = dataset_test.indices
+        torch.save({'train_indices': train_indices,'valid_indices':valid_indices, 'test_indices': test_indices}, split_ind[i])
+
+
+
 root = 'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC'
 gene_expression_file = 'C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC/ExpressionData.csv'
 tf_genes = pd.read_csv("C:/Users/aghktb/Documents/GRN/GRNformer/Data/sc-RNA-seq/hESC/TFHumans.csv",header=None)[0].to_list()

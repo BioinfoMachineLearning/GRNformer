@@ -7,3 +7,5 @@ wandb/
 BEELINE-*
 Data_2/
 *.pyc
+.env
+__pycache__/

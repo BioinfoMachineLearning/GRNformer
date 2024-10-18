@@ -2,8 +2,8 @@ name: grnformer
 channels:
   - pytorch
   - nvidia
-  - conda-forge
   - defaults
+  - conda-forge
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=2_gnu
@@ -40,6 +40,8 @@ dependencies:
   - ld_impl_linux-64=2.40=h12ee557_0
   - lerc=3.0=h295c915_0
   - libabseil=20240116.2=cxx17_h6a678d5_0
+  - libblas=3.9.0=1_h86c2bf4_netlib
+  - libcblas=3.9.0=7_ha36c22a_netlib
   - libcublas=11.11.3.6=0
   - libcufft=10.9.0.58=0
   - libcufile=1.11.1.6=0
@@ -57,6 +59,7 @@ dependencies:
   - libiconv=1.16=h5eee18b_3
   - libidn2=2.3.4=h5eee18b_0
   - libjpeg-turbo=2.0.0=h9bf148f_0
+  - liblapack=3.9.0=7_ha36c22a_netlib
   - libnpp=11.8.0.86=0
   - libnvjpeg=11.9.0.86=0
   - libopenblas=0.3.28=pthreads_h94d23a6_0
@@ -167,6 +170,7 @@ dependencies:
       - pyjwt==2.9.0
       - pyparsing==3.1.4
       - python-dateutil==2.9.0.post0
+      - python-dotenv==1.0.1
       - python-multipart==0.0.12
       - pytz==2024.2
       - readchar==4.2.0

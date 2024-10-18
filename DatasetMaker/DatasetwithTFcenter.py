@@ -84,6 +84,20 @@ class GeneExpressionDataset(InMemoryDataset):
         min_n,_ = torch.min(exp_mat,dim=0)
         exp_mat = (exp_mat - min_n ) / (max_n - min_n)
         return exp_mat.T 
+    def z_score_per_cell(self, exp_mat):
+        # exp_mat: n x m matrix (n = number of genes, m = number of cells)
+
+        # Calculate the mean of each column (cell)
+        mean_per_cell = torch.mean(exp_mat, axis=0, keepdim=False)  # shape: (m,)
+
+        # Calculate the standard deviation of each column (cell)
+        std_per_cell = torch.std(exp_mat, axis=0, keepdim=False)    # shape: (m,)
+
+        # Avoid division by zero by adding a small constant to std
+        epsilon = 1e-8
+        z_score = (exp_mat - mean_per_cell) / (std_per_cell + epsilon)
+
+        return z_score
     def process(self):
         
         self.data_list = []
@@ -127,9 +141,10 @@ class GeneExpressionDataset(InMemoryDataset):
         
         #print(regulation_matrix.loc["CEBPB",tf_gene],gene_indices["CEBPB"])
         print(regulation_matrix.shape)
-        minm_x = self.min_max(full_graph.x)
-        
-        fullgraph_x = torch.column_stack((minm_x,Is_tf))
+        #minm_x = self.min_max(full_graph.x)
+        zscore = self.z_score_per_cell(full_graph.x)
+        print("zscore shape",zscore.shape)
+        fullgraph_x = torch.column_stack((zscore,Is_tf))
         full_graph.x = fullgraph_x
         full_graph.y = regulation_edge_index
         # Step 2: Sample subgraphs
