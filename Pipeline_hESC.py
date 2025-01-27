@@ -106,8 +106,6 @@ for i, row in df.iterrows():
                 arg7+"-ExpressionData.csv",
                 "--netFile",
                 arg7+"-network1.csv",
-                "--TFspecies",
-                "human",
                 "--outPrefix",
                 arg8
                 
