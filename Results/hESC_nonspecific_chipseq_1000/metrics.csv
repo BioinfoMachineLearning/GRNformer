@@ -1,0 +1,8 @@
+Metric,Value
+BinaryAUROC,0.863
+BinaryAveragePrecision,0.854
+BinaryF1Score,0.842
+BinaryAccuracy,0.859
+BinaryJaccardIndex,0.728
+BinaryRecall,0.756
+BinaryPrecision,0.951

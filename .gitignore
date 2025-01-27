@@ -1,0 +1,17 @@
+wandb/
+*.log
+*.pt
+*.ckpt
+*.pt
+*.log
+BEELINE-*
+Data_2/
+*.pyc
+.env
+__pycache__/
+logs/
+processed*/
+raw*/
+inputs/
+lightning_logs/
+Data/sc-RNA-seq/
