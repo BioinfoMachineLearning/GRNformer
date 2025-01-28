@@ -4,7 +4,7 @@ seed_everything: 123
 data:
   class_path: src.datamodules.grn_datamodule.GRNDataModule
   init_args:
-    dataset_dir: 'test'
+    dataset_dir: 'train'
     batch_size: 8
     num_workers: 8
 
@@ -26,34 +26,7 @@ model:
         min_lr: 0.00001
         eps: 1e-10
 
-    # model:
-    #   class_path: src.models.CryoTEN.network.CryoTEN
-    #   init_args:
-    #     in_channels: 1
-    #     out_channels: 1
-    #     img_size: 48
-    #     feature_size: 16
-    #     hidden_size: 256
-    #     num_heads: 4
-    #     depths: [3, 3, 3, 3]
-    #     dims: [32, 64, 128, 256]
-    #     pos_embed: "perceptron"
-    #     norm_name: "instance"
-    #     dropout_rate: 0.0
-    #     do_ds: False
 
-    # embed:
-    #   class_path: src.models.CryoTEN.network.CryoTEN
-    #   init_args:
-    #     in_channels: 1
-
-    # edgepred:
-    #   class_path: src.models.CryoTEN.network.CryoTEN
-    #   init_args:
-    #     in_channels: 1
-
-    # edgepred:
-    #   class_path: src.models.CryoTEN.network.CryoTEN
 
 trainer:
   accelerator: gpu

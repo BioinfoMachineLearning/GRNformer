@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 import torch_geometric.transforms as T
 from torch_geometric.utils import from_networkx
 import networkx as nx
-from scipy.spatial.distance import pdist, squareform
+
 from torch_geometric.loader import NeighborSampler
 # from torch.utils.data import DataLoader
 import os
@@ -19,20 +19,20 @@ from torch_geometric.sampler import NumNeighbors
 from torch_geometric.utils import dense_to_sparse, k_hop_subgraph,to_dense_adj,degree
 import random
 class GeneExpressionDataset(InMemoryDataset):
-    def __init__(self, root, gene_expression_file, tf_genes, regulation_file, transform=None, pre_transform=None):
+    def __init__(self, root, gene_expression_file, tf_genes, transform=None, pre_transform=None):
         self.gene_expression_file = gene_expression_file
         self.tf_genes = tf_genes
-        self.regulation_file = regulation_file
+        
         super(GeneExpressionDataset, self).__init__(root, transform, pre_transform)
         self.data_list = torch.load(self.processed_paths[0])
         
     @property
     def raw_file_names(self):
-        return [self.gene_expression_file, self.regulation_file]
+        return [self.gene_expression_file]
 
     @property
     def processed_file_names(self):
-        return [os.path.splitext(os.path.basename(self.regulation_file))[0]+'-inference_grid_updatedhop.pt']
+        return ['inference_grid.pt']
 
     def download(self):
         pass
@@ -143,25 +143,15 @@ class GeneExpressionDataset(InMemoryDataset):
         #                  edge_weight=edge_weight)
         print(full_graph)
         gene_indices = {gene: idx for idx, gene in enumerate(gene_expression_data.index)}
-        regulation_data = pd.read_csv(self.raw_paths[1])
-                
-        #print(len(regulation_data),(tf_gene in regulation_data))
-        regulation_data['Type']=1
-        #print(regulation_data)
-        regulation_matrix = np.zeros((num_genes, num_genes))
+        
         genes = gene_expression_data.index
-        Exp_tar_adj = pd.DataFrame(index=gene_indices.keys(), columns=gene_indices.keys())
-        # Fill in the values based on df2
-        for index, row in regulation_data.iterrows():
-            if(row['Gene1'] in genes)and (row['Gene2'] in genes):
-                Exp_tar_adj.at[row['Gene1'], row['Gene2']] = row['Type']
-        regulation_matrix = torch.as_tensor(Exp_tar_adj.fillna(0).to_numpy())
+
+        
         Is_tf = torch.as_tensor(self.istf(genes,self.tf_genes))
         print(Is_tf.sum())
         #full_graph.x = self.z_score_per_cell(full_graph.x)
         
-        #print(regulation_matrix.loc["CEBPB",tf_gene],gene_indices["CEBPB"])
-        print(regulation_matrix.shape)
+
         # Step 2: Sample subgraphs
         for tf_gene in self.tf_genes:
             if tf_gene in gene_indices:
@@ -236,24 +226,8 @@ class GeneExpressionDataset(InMemoryDataset):
 
                     subgraph_data.edge_weight = edge_weight1
     
-                    # Process the regulation matrix for the subgraph
-                    subgraph_indices = subgraph_node_idx.tolist()
-                    subgraph_regulation_matrix = regulation_matrix[:,subgraph_indices] [subgraph_indices,:]
-                    #print(subgraph_regulation_matrix,regulation_matrix.sum())
-                    subgraph_regulation_edge_index, subgraph_regulation_edge_weight = dense_to_sparse(torch.tensor(subgraph_regulation_matrix))
-                    old_edge_indices = torch.zeros_like(subgraph_regulation_edge_index).cuda()
-                    for m in range(subgraph_regulation_edge_index.size(1)):  # Iterate over all edges
-                         old_edge_indices[0, m] = reverse_mapping[subgraph_regulation_edge_index[0, m].item()]  # Source node
-                         old_edge_indices[1, m] = reverse_mapping[subgraph_regulation_edge_index[1, m].item()]
-
-                    if len(subgraph_regulation_edge_weight)==0:
-                        continue
-                    label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
-                    #print(label_graph)
-                    # Assign the label graph to the subgraph's y attribute
-                    subgraph_data.y = label_graph.edge_index
                     self.all_sampled_indices.append(subgraph_node_set)
-                    self.all_edges.append(old_edge_indices)
+                    #self.all_edges.append(old_edge_indices)
                    #node_attr =  torch.column_stack((subgraph_Is_TF,minmax_exp_acrosscell,))
                     self.data_list.append((subgraph_data,node_idx_map))
 
@@ -301,27 +275,11 @@ class GeneExpressionDataset(InMemoryDataset):
                 edge_weight1 = torch.cat([subgraph_data.edge_weight.unsqueeze(1)])
 
                 subgraph_data.edge_weight = edge_weight1
-                # Process the regulation matrix for the subgraph
-                subgraph_indices = subgraph_node_idx.tolist()
-                subgraph_regulation_matrix = regulation_matrix[:, subgraph_indices][subgraph_indices, :]
-                subgraph_regulation_edge_index, subgraph_regulation_edge_weight = dense_to_sparse(torch.tensor(subgraph_regulation_matrix))
 
-                # Remap regulation edge indices
-                old_edge_indices = torch.zeros_like(subgraph_regulation_edge_index).cuda()
-                for m in range(subgraph_regulation_edge_index.size(1)):  # Iterate over all edges
-                    old_edge_indices[0, m] = reverse_mapping[subgraph_regulation_edge_index[0, m].item()]  # Source node
-                    old_edge_indices[1, m] = reverse_mapping[subgraph_regulation_edge_index[1, m].item()]
-
-                if len(subgraph_regulation_edge_weight) == 0:
-                    continue
-
-                # Create label graph for the subgraph
-                label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
-                subgraph_data.y = label_graph.edge_index
 
                 # Append results
                 self.all_sampled_indices.append(subgraph_node_set)
-                self.all_edges.append(old_edge_indices)
+#                self.all_edges.append(old_edge_indices)
                 self.data_list.append((subgraph_data, node_idx_map))
 
         all_samples = set(chain.from_iterable(self.all_sampled_indices))
@@ -393,18 +351,8 @@ class GeneExpressionDataset(InMemoryDataset):
  
 
                 subgraph_indices = subgraph_node_idx.tolist()
-                subgraph_regulation_matrix = regulation_matrix[:,subgraph_indices] [subgraph_indices,:]
-                #print(subgraph_regulation_matrix)
-                subgraph_regulation_edge_index, subgraph_regulation_edge_weight = dense_to_sparse(torch.tensor(subgraph_regulation_matrix))
-                # print(old_edge_indices)
-                if len(subgraph_regulation_edge_weight)==0:
-                    continue
-                label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
-                #print(label_graph)
-                # Assign the label graph to the subgraph's y attribute
-                subgraph_data.y = label_graph.edge_index
                 self.all_sampled_indices.append(subgraph_node_set)
-                self.all_edges.append(old_edge_indices)
+                #self.all_edges.append(old_edge_indices)
                 self.data_list.append((subgraph_data,node_idx_map))
         
         #print(len(unique_edges))
@@ -414,15 +362,13 @@ class GeneExpressionDataset(InMemoryDataset):
 
         target_size=100
         target_per_node = target_size // 2  # Attempt to balance 50/50 between two nodes
-        
-       
-        
+
         all_samples_final = set(chain.from_iterable(self.all_sampled_indices))
         print(all_samples_final)
-        all_edges_flat = torch.cat(self.all_edges, dim=1)
-        unique_edges = set(map(tuple, all_edges_flat.t().tolist()))
+        # all_edges_flat = torch.cat(self.all_edges, dim=1)
+        # unique_edges = set(map(tuple, all_edges_flat.t().tolist()))
         
-        print(len(unique_edges))
+        # print(len(unique_edges))
         
         torch.save(self.data_list, self.processed_paths[0])
 

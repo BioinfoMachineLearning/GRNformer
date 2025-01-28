@@ -19,7 +19,10 @@ The repository contains codes and scripts to create datasets, train the model, e
 
 To use this repository, clone this repository to the required folder on your system using
 
-`[git clone https://github.com/BioinfoMachineLearning/GRNformer.git)`
+```
+git clone https://github.com/BioinfoMachineLearning/GRNformer.git
+
+```
 
 Set up conda environement and install necessary packages using the setup.sh script.
 
@@ -31,13 +34,13 @@ cd GRNformer
 Run GRNFormer inference on a a sample gene expression file.
 
 ```
-python inference.py --expFile /path/to/expression-file.csv --tfFile /path/to/lisoftfs.csv --outPrefix /path/to/output-prefix
+python infer_grn.py --exp_file /path/to/expression-file.csv --tf_file /path/to/lisoftfs.csv --output_file /path/to/predicted-edges.csv
 
 ```
 Run GRNFormer to evaluate if ground truth network in present
 
 ```
-python main.py test --config/grnformer.yaml
+python eval_grn.py --exp_file /path/to/expression-file.csv --tf_file /path/to/lisoftfs.csv --net_file /path/to/ground-truth-network.csv --output_file /path/to/predicted-edges.csv
 
 ```
 

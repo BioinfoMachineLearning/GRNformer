@@ -1,9 +1,9 @@
 
 
-from GRNModelblocks import GRNFormerLayerBlock
+#from GRNModelblocks import GRNFormerLayerBlock
 from torch_geometric.nn import GAE,BatchNorm
 from torch import nn
-from GRNembedding import Embeddings
+#from GRNembedding import Embeddings
 from torch.nn import Module
 from typing import Optional, Tuple
 

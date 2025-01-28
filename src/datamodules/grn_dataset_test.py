@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 import torch_geometric.transforms as T
 from torch_geometric.utils import from_networkx
 import networkx as nx
-from scipy.spatial.distance import pdist, squareform
+
 from torch_geometric.loader import NeighborSampler
 # from torch.utils.data import DataLoader
 import os
@@ -32,7 +32,7 @@ class GeneExpressionDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self):
-        return [os.path.splitext(os.path.basename(self.regulation_file))[0]+'-inference_grid_updatedhop.pt']
+        return ['inference_grid_test.pt']
 
     def download(self):
         pass
@@ -246,8 +246,8 @@ class GeneExpressionDataset(InMemoryDataset):
                          old_edge_indices[0, m] = reverse_mapping[subgraph_regulation_edge_index[0, m].item()]  # Source node
                          old_edge_indices[1, m] = reverse_mapping[subgraph_regulation_edge_index[1, m].item()]
 
-                    if len(subgraph_regulation_edge_weight)==0:
-                        continue
+                    # if len(subgraph_regulation_edge_weight)==0:
+                    #     continue
                     label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
                     #print(label_graph)
                     # Assign the label graph to the subgraph's y attribute
@@ -312,8 +312,8 @@ class GeneExpressionDataset(InMemoryDataset):
                     old_edge_indices[0, m] = reverse_mapping[subgraph_regulation_edge_index[0, m].item()]  # Source node
                     old_edge_indices[1, m] = reverse_mapping[subgraph_regulation_edge_index[1, m].item()]
 
-                if len(subgraph_regulation_edge_weight) == 0:
-                    continue
+                #if len(subgraph_regulation_edge_weight) == 0:
+                #    continue
 
                 # Create label graph for the subgraph
                 label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
@@ -397,8 +397,8 @@ class GeneExpressionDataset(InMemoryDataset):
                 #print(subgraph_regulation_matrix)
                 subgraph_regulation_edge_index, subgraph_regulation_edge_weight = dense_to_sparse(torch.tensor(subgraph_regulation_matrix))
                 # print(old_edge_indices)
-                if len(subgraph_regulation_edge_weight)==0:
-                    continue
+                #if len(subgraph_regulation_edge_weight)==0:
+                #    continue
                 label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
                 #print(label_graph)
                 # Assign the label graph to the subgraph's y attribute

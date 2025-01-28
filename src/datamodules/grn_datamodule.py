@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import torch
 
-from src.datamodules.grn_dataset import GeneExpressionDataset
+from src.datamodules.tf_walker_dataset_train import GeneExpressionDataset
 from lightning.pytorch import LightningDataModule
 from torch.utils.data import DataLoader,ConcatDataset
 from torch_geometric.loader import DataListLoader

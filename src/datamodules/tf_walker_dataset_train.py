@@ -67,30 +67,7 @@ class GeneExpressionDataset(InMemoryDataset):
               # Return the data object.
             return data    
 
-    def common_neighbors(self,edge_index, num_nodes):
-        adj = to_dense_adj(edge_index, max_num_nodes=num_nodes).squeeze(0)
-        return torch.mm(adj, adj)
 
-    # Function to calculate Jaccard coefficient
-    def jaccard_coefficient(self,edge_index, num_nodes):
-        adj = to_dense_adj(edge_index, max_num_nodes=num_nodes).squeeze(0)
-        intersection = torch.mm(adj, adj)
-        row_sums = adj.sum(dim=1)
-        denominator = row_sums.unsqueeze(0) + row_sums.unsqueeze(1) - intersection
-        return intersection.float() / denominator.float()
-
-    # Function to calculate Adamic/Adar index
-    def adamic_adar_index(self,edge_index, num_nodes):
-        adj = to_dense_adj(edge_index, max_num_nodes=num_nodes).squeeze(0)
-        degrees = adj.sum(dim=1).float()
-        degrees[degrees == 0] = float('inf')  # Prevent division by zero
-        inv_log_degrees = 1 / torch.log(degrees)
-        return torch.mm(adj * inv_log_degrees.unsqueeze(0), adj.t())
-
-    # Function to calculate preferential attachment
-    def preferential_attachment(self,edge_index, num_nodes):
-        degrees = degree(edge_index[0], num_nodes=num_nodes)
-        return degrees.unsqueeze(1) * degrees.unsqueeze(0)
     def activate_grn(self,exp_mat,exp_mean, target_adj,is_tf):
 
        for i in range(len(target_adj)):
@@ -247,20 +224,10 @@ class GeneExpressionDataset(InMemoryDataset):
                 adamic_adar = self.adamic_adar_index(subgraph_data.edge_index, len(subgraph_node_idx))
                 preferential_attach = self.preferential_attachment(subgraph_data.edge_index, len(subgraph_node_idx))
                 print(subgraph_data.edge_weight.shape,common_neigh[subgraph_data.edge_index[0], subgraph_data.edge_index[1]].unsqueeze(1).shape)
-                edge_weight1 = torch.cat([subgraph_data.edge_weight.unsqueeze(1),
-                            common_neigh[subgraph_data.edge_index[0], subgraph_data.edge_index[1]].unsqueeze(1).float(),
-                            jaccard[subgraph_data.edge_index[0], subgraph_data.edge_index[1]].unsqueeze(1),
-                            adamic_adar[subgraph_data.edge_index[0], subgraph_data.edge_index[1]].unsqueeze(1),
-                            preferential_attach[subgraph_data.edge_index[0],subgraph_data.edge_index[1]].unsqueeze(1)], dim=1)
+                edge_weight1 = torch.cat([subgraph_data.edge_weight.unsqueeze(1)])
 
                 subgraph_data.edge_weight = edge_weight1
  
-                #for _, row in regulation_data.iterrows():
-                #    gene1, gene2, regulation_type = row
-                #    if gene1 in gene_indices and gene2 in gene_indices:
-                #        idx1 = gene_indices[gene1]
-                #        idx2 = gene_indices[gene2]
-                #        regulation_matrix[idx1, idx2] = regulation_type
 
                 subgraph_indices = subgraph_node_idx.tolist()
                 subgraph_regulation_matrix = regulation_matrix[:,subgraph_indices] [subgraph_indices,:]
