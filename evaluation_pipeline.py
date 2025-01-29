@@ -1,8 +1,14 @@
 import os
 import subprocess
 import pandas as pd
+import argparse
 
-df = pd.read_csv("/data/GRNformer/Data/hESC.csv")
+parser = argparse.ArgumentParser(description="Run GRNformer evaluation pipeline")
+parser.add_argument("--dataset_file", type=str, required=True, help="Path to the CSV file containing input parameters")
+parser.add_argument("--output_dir", type=str, required=True, help="Path to the output directory")
+args = parser.parse_args()
+output_dir = args.output_dir
+df = pd.read_csv(args.dataset_file)
 for i, row in df.iterrows():
     
     arg1 = row["expression"]
@@ -17,12 +23,12 @@ for i, row in df.iterrows():
     try:
         ## Run the /root/miniforge3/envs/grnformer/bin/python script with arguments from the CSV row
         #if [ "$arg5" -eq 1 ]; then
-        '''
+        
         if arg5 == 1:
             result = subprocess.run(
             [   
                 "/root/miniforge3/envs/grnformer/bin/python",
-                "/data/GRNformer/GenerateInput.py",
+                "GenerateInput.py",
                 "--expFile",
                 arg1,
                 "--netFile",
@@ -46,7 +52,7 @@ for i, row in df.iterrows():
             result = subprocess.run(
             [   
                 "/root/miniforge3/envs/grnformer/bin/python",
-                "/data/GRNformer/GenerateInput.py",
+                "GenerateInput.py",
                 "--expFile",
                 arg1,
                 "--netFile",
@@ -65,49 +71,20 @@ for i, row in df.iterrows():
                 # capture_output=True,
                 text=True
             )
-        
-        '''
-            
+        arg8 = os.path.basename(arg7)
 
-        #    /root/miniforge3/envs/grnformer/bin/python /data/GRNformer/GenerateInput.py --expFile "$arg1" --netFile "$arg2" --geneOrderingFile "$arg3" \
-        #--TFFile "$arg4" --TFs --numGenes "$arg6" --outPrefix "$arg7"
-        #else
-        #    /root/miniforge3/envs/grnformer/bin/python /data/GRNformer/GenerateInput.py --expFile "$arg1" --netFile "$arg2" --geneOrderingFile "$arg3" \
-        #--TFFile "$arg4" --numGenes "$arg6" --outPrefix "$arg7"
-        #fi
-    # result = subprocess.run(
-        #     [
-        #         "/root/miniforge3/envs/grnformer/bin/python",
-        #         "/data/GRNformer/Inference.py",
-        #         "--save_dir",
-        #         "Evaluation_"+arg8+"_equalneg_0.5",
-        #         "--root",
-        #         "Data/sc-RNA-seq/mHSC-L",
-        #         "--expFile",
-        #         arg7+"-ExpressionData.csv",
-        #         "--netFile",
-        #         arg7+"-network1.csv",
-        #         "--TFspecies",
-        #         "mouse",
-        #         "--outPrefix",
-        #         arg7
-                
-        #     ],
-        #     check=True,
-        #     # timeout=900,
-        #     # capture_output=True,
-        #     text=True
-        # )
         result = subprocess.run(
             [
                 "/root/miniforge3/envs/grnformer/bin/python",
-                "/data/GRNformer/Beelinegrnfomerinference.py",
-                "--expFile",
-                arg7+"-ExpressionData.csv",
-                "--netFile",
-                arg7+"-network1.csv",
-                "--outPrefix",
-                arg8
+                "eval_grn.py",
+                "--exp_file",
+                output_dir+"/"+arg8+"/ExpressionData.csv",
+                "--tf_file",
+                output_dir+"/"+arg8+"/TFs.csv",
+                "--net_file",
+                output_dir+"/"+arg8+"/refNetwork.csv",
+                "--output_file",
+                output_dir+"/"+arg8+"/predictedNetwork.csv",
                 
             ],
             check=True,

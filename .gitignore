@@ -14,5 +14,5 @@ processed*/
 raw*/
 inputs/
 lightning_logs/
-Data/sc-RNA-seq/
+Data/scRNA-seq*/
 Scripts/

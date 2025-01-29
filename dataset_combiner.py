@@ -1,8 +1,18 @@
 import pandas as pd
 import sys
+import argparse
 # List of CSV file names
 #csv_files = ['../Data/sc-RNA-seq/hESC/hESC-ChIP-seq-network.csv', '../Data/sc-RNA-seq/hESC/Non-specific-ChIP-seq-network.csv', '../Data/sc-RNA-seq/hESC/STRING-network.csv']
-csv_files = [sys.argv[1], sys.argv[2], sys.argv[3]]
+
+# Set up argument parser
+parser = argparse.ArgumentParser(description='Combine multiple CSV files into one.')
+parser.add_argument('--cell-type-network', help='cell type netwok csv to combine')
+parser.add_argument('--non-specific-network', help='non specific network csv file name')
+parser.add_argument('--string-network', help='string network csv file name')
+parser.add_argument('--output-file', help='output file name')
+args = parser.parse_args()
+
+csv_files = [args.cell_type_network, args.non_specific_network, args.string_network]
 # Create an empty dataframe to store the combined data
 combined_df = pd.DataFrame()
 
@@ -17,5 +27,5 @@ print(combined_df.shape)
 combined_df.drop_duplicates(inplace=True)
 print(combined_df.shape)
 # Write the combined dataframe to a new CSV file
-combined_df.to_csv(sys.argv[4], index=False)
+combined_df.to_csv(args.output_file, index=False)
 
