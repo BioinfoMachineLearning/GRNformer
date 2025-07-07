@@ -1,7 +1,7 @@
 # GRNFormer -  Accurate Gene Regulatory Network Inference Using Graph Transformer
 GRNFormer, is an advanced variaional graph transformer autoencoder model designed to accurately infer regulatory relationships between transcription factors and target genes from single-cell RNA-seq transcriptomics data, while supporting generalization across species and cell types.
 
-![GRNFormer](./grnformer_overview.png?raw=true "The Overview of GRNFormer Pipeline")
+![GRNFormer](./GRNFormer_overview.png?raw=true "The Overview of GRNFormer Pipeline")
 
 GRNFormer consists of three main novel designs: 
 1. TFWalker: a de-novo Transcription Factor (TF) centered subgraph sampling method to extract local or neighborhood co-expression of a transcription factor (TF) to facilitate GRN inference; 
@@ -91,6 +91,12 @@ Training the model from scratch
 python main.py fit --config/grnformer.yaml
 
 ```
+
+### Datasets Availability
+BEELINE: https://zenodo.org/records/3701939
+DREAM5 : https://www.synapse.org/Synapse:syn2787209/wiki/70351
+PBMC3k : https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.1.0/pbmc3k
+preprocessed PBMC can be accessed from scanpy python package.
 
 # Cite Us
 

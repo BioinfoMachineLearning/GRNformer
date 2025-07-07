@@ -18,10 +18,10 @@ if __name__ == '__main__':
             root = os.path.abspath(f'{dataset_dir}/{i}')
             gene_expression_file = os.path.abspath(f'{dataset_dir}/{i}/ExpressionData.csv')
             tf_list = os.path.abspath(f'{dataset_dir}/{i}/TFs.csv')
-            
+            TF_list = pd.read_csv(tf_list,header=None)[0].to_list()
 
             regulation_file = os.path.abspath(f'{dataset_dir}/{i}/{i}_combined.csv')
-            dataset = GeneExpressionDataset(root,gene_expression_file,tf_list,regulation_file)
+            dataset = GeneExpressionDataset(root,gene_expression_file,TF_list,regulation_file)
 
             print(len(dataset))
             train_size = int(0.70 * len(dataset))
