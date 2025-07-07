@@ -85,11 +85,11 @@ print("\nReading %s" % (gene_ordering_file))
 gene_df = pd.read_csv(gene_ordering_file, header=0, index_col=0)
 #print(expr_df.head())
 #print(gene_df.head())
+tfs_df = pd.read_csv(tf_file, header=0)
+tfs = tfs_df[tfs_df.columns[0]]
+tfs.to_csv(opts.outPrefix+'TFs.csv',index=False)
 if include_tfs:
     print("\nReading %s" % (tf_file))
-    tfs_df = pd.read_csv(tf_file, header=0)
-    tfs = tfs_df[tfs_df.columns[0]]
-    tfs.to_csv(opts.outPrefix+'TFs.csv',index=False)
     num_total_tfs = len(tfs)
     # limit the tfs to those present in the expression file
     tfs = tfs[tfs.isin(expr_df.index)]
