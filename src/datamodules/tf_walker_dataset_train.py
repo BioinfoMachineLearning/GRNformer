@@ -217,13 +217,7 @@ class GeneExpressionDataset(InMemoryDataset):
                 subgraph_data = Data(x=subgraph_x, edge_index=subgraph_edge_index, edge_weight=subgraph_edge_weight)
                 #print("subgraph:",subgraph_data)
                 # Step 3: Create unique label graph for the subgraph
-                common_neigh = self.common_neighbors(subgraph_data.edge_index, len(subgraph_node_idx))
 
-                jaccard = self.jaccard_coefficient(subgraph_data.edge_index, len(subgraph_node_idx))
-
-                adamic_adar = self.adamic_adar_index(subgraph_data.edge_index, len(subgraph_node_idx))
-                preferential_attach = self.preferential_attachment(subgraph_data.edge_index, len(subgraph_node_idx))
-                print(subgraph_data.edge_weight.shape,common_neigh[subgraph_data.edge_index[0], subgraph_data.edge_index[1]].unsqueeze(1).shape)
                 edge_weight1 = torch.cat([subgraph_data.edge_weight.unsqueeze(1)])
 
                 subgraph_data.edge_weight = edge_weight1
