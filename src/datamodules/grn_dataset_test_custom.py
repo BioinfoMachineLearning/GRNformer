@@ -19,9 +19,12 @@ from torch_geometric.sampler import NumNeighbors
 from torch_geometric.utils import dense_to_sparse, k_hop_subgraph,to_dense_adj,degree
 import random
 class GeneExpressionDataset(InMemoryDataset):
-    def __init__(self, root, gene_expression_file, tf_genes, coexpression_threshold=0.1, max_subgraph_size=100, transform=None, pre_transform=None):
+    def __init__(self, root, gene_expression_file, tf_genes, regulation_file, 
+             coexpression_threshold=0.5, max_subgraph_size=10, 
+             transform=None, pre_transform=None):
         self.gene_expression_file = gene_expression_file
         self.tf_genes = tf_genes
+        self.regulation_file = regulation_file
         self.coexpression_threshold = coexpression_threshold
         self.max_subgraph_size = max_subgraph_size
         super(GeneExpressionDataset, self).__init__(root, transform, pre_transform)
@@ -29,11 +32,17 @@ class GeneExpressionDataset(InMemoryDataset):
         
     @property
     def raw_file_names(self):
-        return [self.gene_expression_file]
+        # Patch: look for files directly in root, not in 'raw/'
+        return [self.gene_expression_file, self.regulation_file]
+
+    @property
+    def raw_paths(self):
+        # Patch: return full paths to the raw files in the root directory
+        return [os.path.join(self.root, f) for f in self.raw_file_names]
 
     @property
     def processed_file_names(self):
-        return ['inference_grid.pt']
+        return [f"inference_grid_test_max_{self.max_subgraph_size}_{self.coexpression_threshold}.pt"]
 
     def download(self):
         pass
@@ -44,29 +53,25 @@ class GeneExpressionDataset(InMemoryDataset):
         is_tf = genes.str.upper().isin(TFs)  
         #print(is_tf)
         return is_tf 
-    def construct_networkx(self,edge_weight_matrix,gene_exp_matr):
-            """
-              Constructs a network from an edge weight matrix.
+    def construct_networkx(self, edge_weight_matrix, gene_exp_matr):
+        """
+        Constructs a network from an edge weight matrix.
 
-              Args:
-                edge_weight_matrix: A square matrix of edge weights.
+        Args:
+            edge_weight_matrix: A square matrix of edge weights.
 
-              Returns:
-                A `torch_geometric.data.Data` object representing the network.
-            """
-
-            edge_index = (abs(edge_weight_matrix) > self.coexpression_threshold).nonzero().t()
-            row, col = edge_index
-            edge_weight = edge_weight_matrix[row, col]
-            #G = nx.Graph(np.matrix(edge_weight_matrix))
-
-
-            # Create a Data object to represent the graph.
-            data = Data(x=torch.tensor(gene_exp_matr),edge_index=edge_index, edge_weight=edge_weight)
-
-
-              # Return the data object.
-            return data    
+        Returns:
+            A `torch_geometric.data.Data` object representing the network.
+        """
+        # Use configurable coexpression threshold instead of hardcoded 0.5
+        edge_index = (abs(edge_weight_matrix) > self.coexpression_threshold).nonzero().t()
+        row, col = edge_index
+        edge_weight = edge_weight_matrix[row, col]
+        
+        # Create a Data object to represent the graph.
+        data = Data(x=torch.tensor(gene_exp_matr), edge_index=edge_index, edge_weight=edge_weight)
+        
+        return data
 
 
 
@@ -144,15 +149,44 @@ class GeneExpressionDataset(InMemoryDataset):
         #                  edge_weight=edge_weight)
         print(full_graph)
         gene_indices = {gene: idx for idx, gene in enumerate(gene_expression_data.index)}
-        
-        genes = gene_expression_data.index
+        regulation_data = pd.read_csv(self.raw_paths[1])
+        # Check if the regulation_data DataFrame has a 'Type' column (case-insensitive) and filter for positive (Type == 1) only
+        # Process the regulation_data to ensure -1 and 1 become label 1, and others become 0
+        # for both 'Type' or 'Label' columns if present
 
-        
+        # Identify the label column: 'Type' or 'Label'
+        label_col = None
+        for col in regulation_data.columns:
+            if col.lower() == 'type':
+                label_col = col
+                break
+        if label_col is None:
+            for col in regulation_data.columns:
+                if col.lower() == 'label':
+                    label_col = col
+                    break
+
+        if label_col is not None:
+            # Convert values: if value is 1 or -1 assign 1, else 0
+            regulation_data['__custom_bin_label__'] = regulation_data[label_col].apply(lambda x: 1 if x in [1, -1] else 0)
+        else:
+            # If neither present, all gene pairs in refNetwork are treated as positive (label 1)
+            regulation_data['__custom_bin_label__'] = 1
+
+        regulation_matrix = np.zeros((num_genes, num_genes))
+        genes = gene_expression_data.index
+        Exp_tar_adj = pd.DataFrame(index=gene_indices.keys(), columns=gene_indices.keys())
+        # Fill in the values based on regulation_data
+        for index, row in regulation_data.iterrows():
+            if (row['Gene1'] in genes) and (row['Gene2'] in genes):
+                Exp_tar_adj.at[row['Gene1'], row['Gene2']] = row['__custom_bin_label__']
+        regulation_matrix = torch.as_tensor(Exp_tar_adj.fillna(0).to_numpy())
         Is_tf = torch.as_tensor(self.istf(genes,self.tf_genes))
         print(Is_tf.sum())
         #full_graph.x = self.z_score_per_cell(full_graph.x)
         
-
+        #print(regulation_matrix.loc["CEBPB",tf_gene],gene_indices["CEBPB"])
+        print(regulation_matrix.shape)
         # Step 2: Sample subgraphs
         for tf_gene in self.tf_genes:
             if tf_gene in gene_indices:
@@ -162,9 +196,9 @@ class GeneExpressionDataset(InMemoryDataset):
                 
                 # Get 1-hop and 2-hop neighbors
                 num_hops = 1
-                while num_hops<100:
+                while num_hops<10:
                     subgraph_node_idx1, subgraph_edge_index1, _, _ = k_hop_subgraph(tf_idx, num_hops=num_hops, edge_index=full_graph.edge_index, num_nodes=num_genes)
-                    if len(subgraph_node_idx1) >= 100:
+                    if len(subgraph_node_idx1) >= self.max_subgraph_size:
                         break
                     #print(num_hops,len(subgraph_node_idx))
                     num_hops += 1
@@ -220,21 +254,39 @@ class GeneExpressionDataset(InMemoryDataset):
                     subgraph_x = torch.column_stack((zscore,Is_tf[subgraph_node_idx]))
 
                     #subgraph_x = full_graph.x[subgraph_node_idx]
-
+                    if len(subgraph_node_idx) < 3:
+                        print(f"Skipping degenerate subgraph with {len(subgraph_node_idx)} nodes (TF branch)")
+                        continue
                     subgraph_data = Data(x=subgraph_x, edge_index=subgraph_edge_index, edge_weight=subgraph_edge_weight)
                     # #print(subgraph_data.edge_weight.shape,common_neigh[subgraph_data.edge_index[0], subgraph_data.edge_index[1]].unsqueeze(1).shape)
                     edge_weight1 = torch.cat([subgraph_data.edge_weight.unsqueeze(1)])
 
                     subgraph_data.edge_weight = edge_weight1
     
+                    # Process the regulation matrix for the subgraph
+                    subgraph_indices = subgraph_node_idx.tolist()
+                    subgraph_regulation_matrix = regulation_matrix[:,subgraph_indices] [subgraph_indices,:]
+                    #print(subgraph_regulation_matrix,regulation_matrix.sum())
+                    subgraph_regulation_edge_index, subgraph_regulation_edge_weight = dense_to_sparse(torch.tensor(subgraph_regulation_matrix))
+                    old_edge_indices = torch.zeros_like(subgraph_regulation_edge_index)#.cuda()
+                    for m in range(subgraph_regulation_edge_index.size(1)):  # Iterate over all edges
+                         old_edge_indices[0, m] = reverse_mapping[subgraph_regulation_edge_index[0, m].item()]  # Source node
+                         old_edge_indices[1, m] = reverse_mapping[subgraph_regulation_edge_index[1, m].item()]
+
+                    # if len(subgraph_regulation_edge_weight)==0:
+                    #     continue
+                    label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
+                    #print(label_graph)
+                    # Assign the label graph to the subgraph's y attribute
+                    subgraph_data.y = label_graph.edge_index
                     self.all_sampled_indices.append(subgraph_node_set)
-                    #self.all_edges.append(old_edge_indices)
+                    self.all_edges.append(old_edge_indices)
                    #node_attr =  torch.column_stack((subgraph_Is_TF,minmax_exp_acrosscell,))
                     self.data_list.append((subgraph_data,node_idx_map))
 
 
             
-                first_hop_limit = 50
+                first_hop_limit = int(self.max_subgraph_size/2)
                 # Select up to 50 first-hop neighbors
                 selected_first_hop = first_hop_neighbors[:first_hop_limit]
 
@@ -270,18 +322,39 @@ class GeneExpressionDataset(InMemoryDataset):
                 exp_x = full_graph.x[subgraph_node_idx]
                 zscore = self.z_score_per_cell(exp_x)
                 subgraph_x = torch.column_stack((zscore, Is_tf[subgraph_node_idx]))
-
+                print(subgraph_x.shape)
                 # Create the subgraph
                 subgraph_data = Data(x=subgraph_x, edge_index=subgraph_edge_index, edge_weight=subgraph_edge_weight)
                 edge_weight1 = torch.cat([subgraph_data.edge_weight.unsqueeze(1)])
 
                 subgraph_data.edge_weight = edge_weight1
+                # Process the regulation matrix for the subgraph
+                subgraph_indices = subgraph_node_idx.tolist()
+                subgraph_regulation_matrix = regulation_matrix[:, subgraph_indices][subgraph_indices, :]
+                subgraph_regulation_edge_index, subgraph_regulation_edge_weight = dense_to_sparse(torch.tensor(subgraph_regulation_matrix))
 
+                # Remap regulation edge indices
+                old_edge_indices = torch.zeros_like(subgraph_regulation_edge_index)#.cuda()
+                for m in range(subgraph_regulation_edge_index.size(1)):  # Iterate over all edges
+                    old_edge_indices[0, m] = reverse_mapping[subgraph_regulation_edge_index[0, m].item()]  # Source node
+                    old_edge_indices[1, m] = reverse_mapping[subgraph_regulation_edge_index[1, m].item()]
+
+                #if len(subgraph_regulation_edge_weight) == 0:
+                #    continue
+                                # After finalizing subgraph_node_idx
+                if len(subgraph_node_idx) < 3:
+                    print(f"Skipping degenerate subgraph with {len(subgraph_node_idx)} nodes (TF branch)")
+                    continue
+                # Create label graph for the subgraph
+                label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
+                subgraph_data.y = label_graph.edge_index
 
                 # Append results
                 self.all_sampled_indices.append(subgraph_node_set)
-#                self.all_edges.append(old_edge_indices)
+                self.all_edges.append(old_edge_indices)
                 self.data_list.append((subgraph_data, node_idx_map))
+
+
 
         all_samples = set(chain.from_iterable(self.all_sampled_indices))
         all_nodes = set(range(full_graph.num_nodes))
@@ -292,9 +365,9 @@ class GeneExpressionDataset(InMemoryDataset):
         
         for rem_node in no_sampled_nodes:
                 num_hops = 1
-                while num_hops<100:
+                while num_hops<10:
                     subgraph_node_idx, subgraph_edge_index, _, _ = k_hop_subgraph(rem_node, num_hops=num_hops, edge_index=full_graph.edge_index, num_nodes=num_genes)
-                    if len(subgraph_node_idx) >= 100:
+                    if len(subgraph_node_idx) >= self.max_subgraph_size:
                         break
                     print(num_hops,len(subgraph_node_idx))
                     num_hops += 1
@@ -311,10 +384,10 @@ class GeneExpressionDataset(InMemoryDataset):
                 second_hop_neighbors = subgraph_node_idx[~torch.isin(subgraph_node_idx,first_hop_neighbors) & (subgraph_node_idx != rem_node)]
                 
                 # Combine TF, first hop, and second hop neighbors to get exactly 100 nodes
-                if len(first_hop_neighbors) + 1 >= 100:
-                    subgraph_node_idx = torch.cat([torch.tensor([rem_node]), first_hop_neighbors[:99]])
+                if len(first_hop_neighbors) + 1 >= self.max_subgraph_size:
+                    subgraph_node_idx = torch.cat([torch.tensor([rem_node]), first_hop_neighbors[:self.max_subgraph_size-1]])
                 else:
-                    remaining_nodes = 100 - (len(first_hop_neighbors) + 1)
+                    remaining_nodes = self.max_subgraph_size - (len(first_hop_neighbors) + 1)
                     subgraph_node_idx = torch.cat([torch.tensor([rem_node]), first_hop_neighbors, second_hop_neighbors[:remaining_nodes]])
                 
                 subgraph_node_set = set(subgraph_node_idx.tolist())
@@ -352,24 +425,40 @@ class GeneExpressionDataset(InMemoryDataset):
  
 
                 subgraph_indices = subgraph_node_idx.tolist()
+                subgraph_regulation_matrix = regulation_matrix[:,subgraph_indices] [subgraph_indices,:]
+                #print(subgraph_regulation_matrix)
+                subgraph_regulation_edge_index, subgraph_regulation_edge_weight = dense_to_sparse(torch.tensor(subgraph_regulation_matrix))
+                # print(old_edge_indices)
+                #if len(subgraph_regulation_edge_weight)==0:
+                #    continue
+                label_graph = Data(edge_index=subgraph_regulation_edge_index, edge_weight=subgraph_regulation_edge_weight)
+                if len(subgraph_node_idx) < 3:
+                    print(f"Skipping degenerate subgraph with {len(subgraph_node_idx)} nodes (remaining node branch)")
+                    continue
+                #print(label_graph)
+                # Assign the label graph to the subgraph's y attribute
+                subgraph_data.y = label_graph.edge_index
                 self.all_sampled_indices.append(subgraph_node_set)
-                #self.all_edges.append(old_edge_indices)
+                self.all_edges.append(old_edge_indices)
                 self.data_list.append((subgraph_data,node_idx_map))
+
+
         
         #print(len(unique_edges))
-        num_subgraphs=self.max_subgraph_size
+        target_size = self.max_subgraph_size
         all_nodes = list(range(full_graph.num_nodes))
         #subgraphs = []
 
-        target_size=self.max_subgraph_size
         target_per_node = target_size // 2  # Attempt to balance 50/50 between two nodes
-
+        
+       
+        
         all_samples_final = set(chain.from_iterable(self.all_sampled_indices))
         print(all_samples_final)
-        # all_edges_flat = torch.cat(self.all_edges, dim=1)
-        # unique_edges = set(map(tuple, all_edges_flat.t().tolist()))
+        all_edges_flat = torch.cat(self.all_edges, dim=1)
+        unique_edges = set(map(tuple, all_edges_flat.t().tolist()))
         
-        # print(len(unique_edges))
+        print(len(unique_edges))
         
         torch.save(self.data_list, self.processed_paths[0])
 
