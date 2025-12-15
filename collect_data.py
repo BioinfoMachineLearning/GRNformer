@@ -18,7 +18,7 @@ local_zip_file = "BEELINE-data.zip"
 extract_folder = "BEELINE-data/inputs/scRNA-Seq"
 
 # Download the file using wget
-#wget.download(args.url, local_zip_file)
+wget.download(url, local_zip_file)
 
 # Extract the zip file
 temp_extract_path = args.data_dir + "_temp"  # Temporary extraction directory

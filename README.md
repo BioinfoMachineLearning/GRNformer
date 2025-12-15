@@ -47,7 +47,7 @@ Alternatively, you can manually create the environment:
 
 ```bash
 conda env create -f environment.yml
-conda activate grnformer_env
+conda activate grnformer
 ```
 
 ## Usage
