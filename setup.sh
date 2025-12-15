@@ -5,7 +5,7 @@ bash miniconda.sh -b -p $HOME/miniconda
 rm miniconda.sh
 export PATH="$HOME/miniconda/bin:$PATH"
 # Create a Conda environment
-conda env create -f environment.yml
+conda env create -f environment.yml -n grnformer
 # Activate the Conda environment
 source activate grnformer
 # Install PyTorch with CUDA 11
