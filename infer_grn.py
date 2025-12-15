@@ -67,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_file',type=str, default=False,
                         help="sets the expression file of datafolder"
                              "Enter the relative path to the root folder of the dataset eg:'Data/sc-RNA-seq/hESC/hESC_nonspecific_chipseq_500-ExpressionData.csv'" )
-    parser.add_argument('--ckpt_path',type=str, default=False,
+    parser.add_argument('--ckpt_path',type=str, default="Trainings/GRNFormer_epoch=26_valid_loss=0.645546.ckpt",
                         help="sets the checkpoint path"
                              "Enter the relative path to the checkpoint file eg:'Trainings/GRNFormer_epoch=26_valid_loss=0.645546.ckpt'" )
     parser.add_argument('--coexpression_threshold',type=float, default=0.1,
@@ -87,12 +87,12 @@ if __name__ == "__main__":
     tf  = pd.read_csv(tffile,header=None)[0].to_list()
 
     TF_list = [tf]
-    regulation_file=[os.path.abspath(args.net_file)]
+    #regulation_file=[os.path.abspath(args.net_file)]
     #os.makedirs(DATASET_DIR+"/"+args.save_dir, exist_ok=True)
     All_test_dataset=[]
     for i in range(len(root)):
 
-        dataset = dt.GeneExpressionDataset(root[i],gene_expression_file[i],TF_list[i],regulation_file[i],coexpression_threshold=args.coexpression_threshold,max_subgraph_size=args.max_subgraph_size)
+        dataset = dt.GeneExpressionDataset(root[i],gene_expression_file[i],TF_list[i],coexpression_threshold=args.coexpression_threshold,max_subgraph_size=args.max_subgraph_size)
 
     All_test_dataset.append(dataset)
 
@@ -104,4 +104,5 @@ if __name__ == "__main__":
     # trainer = pl.Trainer.from_argparse_args(args)
     trainer = Trainer(devices=[0], num_nodes=1, accelerator = ACCELERATOR, detect_anomaly = True, enable_model_summary = True)
     #trainer.test(model,dataloaders=test_loader, ckpt_path=os.path.abspath('Trainings/GRNFormer_epoch=26_valid_loss=0.645546.ckpt'))
-    trainer.predict(model,dataloaders=test_loader, ckpt_path=os.path.abspath(args.ckpt_path))
+    ckpt_path = os.path.abspath(args.ckpt_path) if args.ckpt_path else None
+    trainer.predict(model, dataloaders=test_loader, ckpt_path=ckpt_path)
