@@ -114,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_file',type=str, default=False,
                         help="sets the expression file of datafolder"
                              "Enter the relative path to the root folder of the dataset eg:'Data/sc-RNA-seq/hESC/hESC_nonspecific_chipseq_500-ExpressionData.csv'" )
-    parser.add_argument('--ckpt_path',type=str, default=False,
+    parser.add_argument('--ckpt_path',type=str, default='Trainings/GRNFormer_epoch=26_valid_loss=0.645546.ckpt',
                         help="sets the checkpoint path"
                              "Enter the relative path to the checkpoint file eg:'Trainings/GRNFormer_epoch=26_valid_loss=0.645546.ckpt'" )
     parser.add_argument('--coexpression_threshold',type=float, default=0.1,
