@@ -1,4 +1,4 @@
-name: grnformer_env
+name: grnformer
 channels:
   - defaults
 dependencies:
