@@ -45,7 +45,7 @@ os.remove(local_zip_file)
 ground_truth_url = "https://zenodo.org/records/3701939/files/BEELINE-Networks.zip?download=1"
 local_zip_file = "BEELINE-Networks.zip"
 extract_folder = args.data_dir+"-Networks"
-#wget.download(ground_truth_url, local_zip_file)
+wget.download(ground_truth_url, local_zip_file)
 with zipfile.ZipFile(local_zip_file, "r") as zip_ref:
     zip_ref.extractall(extract_folder)
     print(f"Extracted ground truth networks to '{args.data_dir}'")
