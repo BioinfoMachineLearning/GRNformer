@@ -99,7 +99,7 @@ if __name__ == "__main__":
     TestDatasets = ConcatDataset(All_test_dataset)
   
     test_loader = DataListLoader(dataset=TestDatasets, batch_size=BATCH_SIZE, shuffle=False, num_workers=1)
-    model = GRNFormerLitModule(totalnodes=numnodes, tf_file = tffile, exp_file = os.path.abspath(args.exp_file), net_file=os.path.abspath(args.net_file), output_file=os.path.abspath(args.output_file))
+    model = GRNFormerLitModule(totalnodes=numnodes, tf_file = tffile, exp_file = os.path.abspath(args.exp_file), output_file=os.path.abspath(args.output_file))
     print("Model loaded")
     # trainer = pl.Trainer.from_argparse_args(args)
     trainer = Trainer(devices=[0], num_nodes=1, accelerator = ACCELERATOR, detect_anomaly = True, enable_model_summary = True)
