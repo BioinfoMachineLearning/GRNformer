@@ -40,7 +40,7 @@ cd GRNformer
 2. Set up conda environment and install necessary packages using the setup script:
 
 ```bash
-./setup.sh
+bash setup.sh
 ```
 
 Alternatively, you can manually create the environment:
