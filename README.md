@@ -75,8 +75,10 @@ python infer_grn.py \
 - `--max_subgraph_size` (default: 100): Maximum number of nodes in each TF-centered subgraph sampled by TFWalker. Adjust based on your dataset size and computational resources.
 
 ### Evaluation with Ground Truth
+<details>
+  <summary>Standard, custom, and general evaluation</summary>
 
-#### Standard Evaluation
+### Standard Evaluation
 
 Run GRNFormer to evaluate performance when a ground truth network is available:
 
@@ -87,6 +89,12 @@ python eval_grn.py \
     --net_file /path/to/ground-truth-network.csv \
     --output_file /path/to/predicted-edges.csv
 ```
+In addition to `predicted-edges.csv` and `predicted-edges-metrics.csv`, the
+evaluation also writes `<output_file>_covered_edges.csv`, which contains the
+TF→gene edges covered by the TFWalker input (derived from the subgraph
+construction). This file can be passed to `scripts/general_grn_evaluation.py`
+via `--covered_edges` to ensure only covered edges are evaluated and to compute
+coverage.
 
 **Additional Input:**
 - `ground-truth-network.csv`: Ground truth network edges (CSV format: source, target)
@@ -111,7 +119,8 @@ python eval_grn_custom.py \
 - `--coexpression_threshold` (default: 0.1): Threshold for co-expression network construction
 - `--max_subgraph_size` (default: 100): Maximum subgraph size for TFWalker sampling
 
-#### Perturbation Evaluation
+
+### Perturbation Evaluation
 
 Evaluate model robustness under various perturbation conditions (noise and dropout):
 
@@ -155,7 +164,171 @@ python eval_grn_perturb.py \
 - `--coexpression_threshold` (default: 0.1): Threshold for co-expression network construction
 - `--max_subgraph_size` (default: 100): Maximum subgraph size for TFWalker sampling
 
+
+### Complete GRN Evaluation (clean negative pool, sampling, full-matrix, EPR)
+
+GRNFormer’s complete evaluation proceeds in two stages:
+
+1. **Clean negative pool construction**
+
+   From the expression matrix and ground-truth network, we construct a **clean
+   negative evaluation pool**. This pool contains all ordered gene–gene pairs
+   `(g1, g2)` with `g1 != g2` in the expression gene set, **excluding**:
+
+   - all known positive TF–target edges from the reference network, and
+   - any training negatives you optionally provide.
+
+   This ensures that negatives used for evaluation do not overlap with known
+   positives or training negatives.
+
+2. **Metric computation**
+
+   Using the clean negative pool, the ground-truth positives, and the full
+   predicted TF–gene adjacency, we compute:
+
+   - sampled AUROC/AUPR (with bootstrapping),
+   - full-matrix AUROC/AUPR over the entire clean pool,
+   - early precision (EPR@K),
+   - coverage of the ground-truth network by the TFWalker subgraphs.
+
+---
+
+#### Step 1: Build the clean negative evaluation pool
+
+Script: `scripts/create_clean_eval_pool.py`
+
+**Purpose**
+
+- Define a clean set of negative TF–gene candidates for evaluation, consistent
+  across methods and runs.
+
+**Arguments**
+
+- `--expression`  
+  Path to `ExpressionData.csv`. Genes in the index define the gene universe.
+
+- `--network`  
+  Path to the reference regulatory network (`refNetwork.csv`). All TF–target
+  pairs in this file are treated as positives and excluded from the clean pool.
+
+- `--training_negatives` (optional)  
+  One or more CSV files with training negatives (e.g. negatives sampled during
+  model training). Any pairs in these files are also excluded from the clean pool.
+
+- `--output`  
+  Path to the output CSV, typically named
+  `clean_evaluation_pool_all_pairs.csv`. The file contains all remaining TF–gene
+  candidate pairs and is used as the negative universe for evaluation.
+
+**Example**
+```bash
+python scripts/create_clean_eval_pool.py \
+  --expression /path/to/ExpressionData.csv \
+  --network /path/to/refNetwork.csv \
+  --output /path/to/clean_evaluation_pool_all_pairs.csv
+```
+
+#### Step 2: Run the general GRN evaluation
+
+Script: `scripts/general_grn_evaluation.py`
+
+**Purpose**
+
+Evaluate GRNFormer predictions against the ground-truth regulatory network
+using the clean negative pool and TFWalker coverage.
+
+**Inputs**
+
+- `--positives`  
+  Ground-truth regulatory network (e.g. `refNetwork.csv` or `master_test.csv`).
+  If a `label` / `Label` column exists, only `label == 1` rows are used.
+
+- `--clean_negatives`  
+  Clean negative pool from Step 1 (e.g. `clean_evaluation_pool_all_pairs.csv`).
+
+- `--predictions`  
+  Full TF–gene adjacency with prediction scores (e.g. `predictedNetwork.csv`),
+  as produced by `eval_grn.py`.
+
+- `--expression`  
+  Expression matrix (`ExpressionData.csv`, genes in the index). This defines the
+  gene universe and filters positives/negatives/predictions.
+
+- `--tfs`  
+  TF list (`TFs.csv`). Positives are restricted to TF→gene edges where the
+  source is in this TF list and in the expression gene set.
+
+- `--covered_edges` (optional but recommended)  
+  CSV listing TF→gene edges covered by the TFWalker subgraphs
+  (e.g. `Gene1,Gene2`, derived from `edge_index_unique`). This encodes which
+  ground-truth TF→gene interactions are reachable in the TF-centered subgraphs
+  and is used to restrict evaluation to covered edges and to compute coverage.
+
+- `--sampled_neg_ratio`  
+  Ratio of sampled negatives to positives for sampled evaluation (default 1.0).
+
+- `--epr_k`  
+  Comma-separated K values for EPR@K (default: K = number of positives).
+
+- `--output_json`  
+  Path to save all metrics in JSON format.
+
+**Example**
+```bash
+python scripts/general_grn_evaluation.py \
+  --positives /path/to/refNetwork.csv \
+  --clean_negatives /path/to/clean_evaluation_pool_all_pairs.csv \
+  --predictions /path/to/predictedNetwork.csv \
+  --expression /path/to/ExpressionData.csv \
+  --tfs /path/to/TFs.csv \
+  --covered_edges /path/to/predictedNetwork_covered_edges.csv \
+  --sampled_neg_ratio 1.0 \
+  --epr_k 10,50,100 \
+  --output_json /path/to/metrics.json
+```
+
+**Outputs**
+
+The JSON produced by `--output_json` contains the following key fields:
+
+- **Counts**
+  - `total_positives_in_file`  
+    Number of TF→gene positives in the ground-truth file after TF/expression filtering.
+  - `n_positives_with_predictions`  
+    Number of positives actually evaluated (after intersecting with
+    `--covered_edges`, if provided).
+  - `positive_coverage`  
+    Fraction of ground-truth TF→gene edges covered by the TFWalker subgraphs:  
+    `n_positives_with_predictions / total_positives_in_file`.
+  - `n_full_negatives`  
+    Size of the clean negative pool.
+  - `n_sampled_negatives`  
+    Number of negatives used in each sampled evaluation run.
+
+- **Sampled metrics (per-run and bootstrapped)**
+  - `sampled_auroc`, `sampled_aupr`  
+    AUROC and AUPR for a single sampled negative set.
+  - `sampled_auroc_mean`, `sampled_auroc_std`  
+    Mean and standard deviation of sampled AUROC over 100 bootstrap repeats.
+  - `sampled_aupr_mean`, `sampled_aupr_std`  
+    Mean and standard deviation of sampled AUPR (average precision) over 100
+    bootstrap repeats.
+
+- **Full-matrix metrics**
+  - `full_auroc`, `full_aupr`  
+    AUROC and AUPR computed using all positives vs. all negatives in the clean
+    evaluation pool.
+
+- **Early Precision (EPR)**
+  - `epr@K`  
+    Early precision values at the K values specified via `--epr_k` (plus
+    `K = number of positives` if not already included).
+
+</details>
+
 ## Evaluation on Test Datasets
+<details>
+  <summary>Click to see the details</summary>
 
 ### Download BEELINE Datasets
 
@@ -178,9 +351,12 @@ python evaluation_pipeline.py \
     --dataset_file Data/mESC.csv \
     --output_dir ./outputs/evaluation
 ```
+</details>
 
 ## Training from Scratch
-
+<details>
+  <summary>Click to see the details</summary>
+  
 ### 1. Prepare Datasets
 
 Download BEELINE sc-RNAseq datasets:
@@ -222,6 +398,7 @@ python main.py fit --config config/grnformer.yaml
 ```
 
 You can customize training parameters by editing `config/grnformer.yaml` or by passing command-line arguments.
+</details>
 
 ## Datasets
 
@@ -249,14 +426,16 @@ GRNformer/
 │   └── grnformer.yaml            # Training configuration
 ├── main.py                       # Training entry point
 ├── infer_grn.py                  # Inference script
-├── eval_grn.py                   # Standard evaluation script
-├── eval_grn_custom.py            # Custom evaluation with configurable parameters
-├── eval_grn_perturb.py           # Perturbation evaluation script
-├── evaluation_pipeline.py        # Full evaluation pipeline
-├── create_dataset.py             # Dataset creation
-├── dataset_combiner.py            # Network combination
-├── collect_data.py                # Data download
-└── environment.yml               # Conda environment
+├── eval_grn.py                        # Standard evaluation script
+├── eval_grn_custom.py                 # Custom evaluation with configurable parameters
+├── eval_grn_perturb.py                # Perturbation evaluation script
+├── scripts/general_grn_evaluation.py  # General GRN evaluation (sampled/full AUROC/AUPR, EPR, coverage)
+├── scripts/create_clean_eval_pool.py  # Clean negative pool construction
+├── evaluation_pipeline.py             # Full evaluation pipeline
+├── create_dataset.py                  # Dataset creation
+├── dataset_combiner.py                # Network combination
+├── collect_data.py                    # Data download
+└── environment.yml                    # Conda environment
 ```
 
 ## Citation
