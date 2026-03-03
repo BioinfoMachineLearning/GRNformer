@@ -388,6 +388,20 @@ class GRNFormerLitModule(LightningModule):
         edge_index_unique = edge_index_unique[:, torch.isin(edge_index_unique[0], tf_indices)]
 
         print(true_edges_tensor.shape,edge_index_unique.shape)
+                # Save covered TF->gene edges (edge_index_unique) as gene-name CSV
+        # This captures which ground-truth TF->gene pairs are actually covered
+        # by the TFwalker subgraphs (used later as --covered_edges).
+        src_idx = edge_index_unique[0].detach().cpu().numpy()
+        tgt_idx = edge_index_unique[1].detach().cpu().numpy()
+
+        covered_edges_gene1 = [gene_names[i] for i in src_idx]
+        covered_edges_gene2 = [gene_names[i] for i in tgt_idx]
+
+        covered_df = pd.DataFrame(
+            {"Gene1": covered_edges_gene1, "Gene2": covered_edges_gene2}
+        )
+        covered_path = os.path.abspath(self.output_file).split(".")[0] + "_covered_edges.csv"
+        covered_df.to_csv(covered_path, index=False)
         #print(edge_index_unique.shape)
         # Avoid division by zero by adding a small epsilon
         counts_matrix[counts_matrix == 0] = 1e-8
@@ -417,7 +431,7 @@ class GRNFormerLitModule(LightningModule):
         final_predictions1,gene_names = self.add_index_and_column(self.exp_file, df)
         #print(final_predictions1)
         
-        # Filter predictions with probability greater than 0.5
+        # Filter predictions with probability greater than -0.01
         filtered_predictions = final_predictions1[final_predictions1>-0.01].stack().reset_index()
         filtered_predictions.columns = ['gene1', 'gene2', 'probability']
         # select only rows with gene1 as TF genes

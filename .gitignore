@@ -14,7 +14,6 @@ raw*/
 inputs/
 lightning_logs/
 Data/scRNA-seq*/
-Scripts/
 README_backup.md
 README copy.md
 .gitignore
