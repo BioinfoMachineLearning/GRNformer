@@ -554,7 +554,7 @@ def evaluate_grn(
         else 0.0
     )
 
-    # Bootstrapped sampled metrics (sampling negatives from clean pool with replacement)
+    # Bootstrapped sampled metrics (sampling negatives from clean pool without replacement per bootstrap draw)
     B = 100
     neg_list = list(full_negatives)
     auroc_vals: List[float] = []
@@ -563,8 +563,13 @@ def evaluate_grn(
     if len(neg_list) > 0 and n_sampled_neg > 0:
         rng = np.random.default_rng(sampled_seed)
         for _ in range(B):
-            idx = rng.integers(0, len(neg_list), size=n_sampled_neg)
-            boot_negatives = {neg_list[i] for i in idx}
+            if n_sampled_neg >= len(neg_list):
+                # If requested sample size exceeds pool, fall back to full pool
+                boot_negatives = set(neg_list)
+            else:
+                # Sample each bootstrap set without replacement
+                idx = rng.choice(len(neg_list), size=n_sampled_neg, replace=False)
+                boot_negatives = {neg_list[i] for i in idx}
             auroc_b, aupr_b, _, _ = compute_auroc_aupr(positives, boot_negatives, preds)
             if auroc_b is not None and aupr_b is not None:
                 auroc_vals.append(auroc_b)
