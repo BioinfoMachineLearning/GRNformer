@@ -1,4 +1,5 @@
 # GRNFormer - Accurate Gene Regulatory Network Inference Using Graph Transformer
+[![DOI](https://zenodo.org/badge/1170957484.svg)](https://doi.org/10.5281/zenodo.18868394)
 
 GRNFormer is an advanced variational graph transformer autoencoder model designed to accurately infer regulatory relationships between transcription factors (TFs) and target genes from single-cell RNA-seq transcriptomics data, while supporting generalization across species and cell types.
 
